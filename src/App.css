@@ -1,0 +1,6 @@
+/* App-level layout utilities */
+.page-container {
+  padding: 24px;
+  max-width: 1440px;
+  margin: 0 auto;
+}

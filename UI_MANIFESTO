@@ -1,0 +1,404 @@
+KPSC UI Manifesto & React Frontend Build Prompt
+
+PART 1 — UI MANIFESTO
+Product Identity
+Kerala Public Service Commission Meeting & Agenda Management System.
+Users are senior government officials, ministers, Joint Secretaries, and Additional Secretaries.
+Age range: 40–70. Non-technical. High accountability. Low tolerance for ambiguity.
+
+Core Design Principle: Consequential Clarity
+Every interaction in this system carries administrative and legal weight.
+The UI must make it impossible to be confused about:
+
+What state an item is in
+What action is available to you right now
+Whether your action succeeded
+
+
+1. COLOUR SYSTEM (non-negotiable)
+Brand Palette
+Navy (primary bg/sidebar):  #0F1F3D
+Navy 2 (sidebar hover):     #162847
+Blue (primary action):      #1A4480
+Mid Blue (secondary):       #2E6DB4
+Gold (accent/highlight):    #F0B429
+Gold Dark (text on light):  #C8952A
+White:                      #FFFFFF
+Off-white (page bg):        #F4F7FB
+Semantic Status Colours — use ONLY these for status chips:
+DRAFT:                  bg #F3F4F6  text #4B5563  (neutral grey)
+PENDING_WING_APPROVAL:  bg #FEF3C7  text #92400E  (amber)
+WING_APPROVED:          bg #DBEAFE  text #1E40AF  (light blue)
+PENDING_RNA:            bg #EDE9FE  text #5B21B6  (purple)
+CONSOLIDATED:           bg #D1FAE5  text #065F46  (green)
+FINALIZED:              bg #FEF9C3  text #854D0E  (gold)
+SUPPLEMENTARY:          bg #F3E8FF  text #6B21A8  (deep purple)
+VOTED:                  bg #DCFCE7  text #14532D  (dark green)
+CHAIRMAN_DECIDED:       bg #F0FDF4  text #166534  (deep green)
+RETURNED/REJECTED:      bg #FEE2E2  text #991B1B  (red)
+ARCHIVED:               bg #F1F5F9  text #475569  (slate)
+RULE: Never use green for a primary action button.
+Green is reserved exclusively for CONSOLIDATED and WING_APPROVED status chips.
+All primary action buttons use Blue (#1A4480) or Gold (#F0B429) only.
+Gold buttons: used ONLY for the highest-stakes action per screen (e.g. "Finalize Sitting", "Final Decision").
+Blue buttons: used for standard primary actions (Approve, Submit, Save).
+Secondary/ghost buttons: white bg, 1px #D1D5DB border, dark text.
+Destructive buttons (Return, Reject): white bg, 1px red border, red text — never filled red.
+
+2. TYPOGRAPHY
+Font stack: Inter, -apple-system, BlinkMacSystemFont, sans-serif
+Scale:
+Page title (H1):    28px  weight 700  color #0F1F3D
+Section title (H2): 20px  weight 600  color #0F1F3D
+Card title (H3):    16px  weight 600  color #111827
+Body:               15px  weight 400  color #374151
+Secondary text:     13px  weight 400  color #6B7280
+Label/chip text:    12px  weight 500  (uppercase for status chips only)
+Button text:        14px  weight 600
+Table header:       12px  weight 600  color #6B7280  UPPERCASE  letter-spacing 0.5px
+Table cell:         14px  weight 400  color #111827
+RULE: Minimum font size is 13px. No exceptions.
+RULE: All interactive labels must have visible text. No icon-only buttons except within confirmed icon-labelled toolbars.
+
+3. SPACING & SIZING
+Touch/click targets: Minimum 44×44px for all interactive elements.
+This means: table action buttons must be at least 44px tall with adequate padding.
+Icon buttons: 40px × 40px box with 8px icon, NOT 20px × 20px box with 16px icon.
+Page layout:
+
+Sidebar: 240px fixed
+Content: calc(100vw - 240px), max-width 1440px
+Page padding: 32px horizontal, 28px vertical
+Card gap: 16px
+Section gap: 32px
+
+Cards:
+
+Background: #FFFFFF
+Border: 1px solid #E5E7EB
+Border-radius: 8px
+Padding: 20px 24px
+Hover state on clickable cards: border-color #1A4480, box-shadow 0 0 0 3px rgba(26,68,128,0.08)
+
+Form fields:
+
+Height: 44px (never shorter — this is a tap target)
+Border: 1px solid #D1D5DB
+Border-radius: 6px
+Focus: 2px solid #1A4480 border, no box-shadow
+Font size: 15px (not 13px, not 12px — 15px minimum for data entry)
+Padding: 0 12px
+
+
+4. SIDEBAR & NAVIGATION
+Sidebar structure:
+[KPSC Logo + name]         <- top, 72px height section
+─────────────────
+[Role badge chip]          <- shows user's role e.g. "Chairman PS"
+─────────────────
+[Navigation items]         <- role-filtered list
+─────────────────
+[User name + avatar]       <- bottom
+[Sign Out]
+Navigation items are ROLE-FILTERED.
+Do NOT show the same navigation to all users.
+Each role sees ONLY their relevant menu items.
+Chairman PS sees:
+
+Dashboard, Meetings/Calendar, Planned Sittings, Agenda Management, Reports, Audit Log
+
+Chairman sees:
+
+Dashboard, My Sittings, Agenda Review, Final Decisions, Reports
+
+R&A AS/JS sees:
+
+Dashboard, Consolidation Queue, Agenda Management, Reports
+
+Wing AS/JS sees:
+
+Dashboard, Pending Approval, Wing Agenda, Meetings
+
+Wing Member sees:
+
+Dashboard, My Agenda Items, Meetings
+
+Commission Member sees:
+
+Dashboard, My Sittings, My Notes
+
+Web Admin sees:
+
+Dashboard, User Management, Wing Configuration, System Config, Logs
+
+Active nav item: Left border 3px solid #F0B429 (gold), bg #1A2E50, text white.
+Hover nav item: bg #1A2E50, text white.
+Default nav item: text rgba(255,255,255,0.65).
+
+5. ROLE-SPECIFIC DASHBOARDS
+Each role gets a custom dashboard. No role sees a generic empty dashboard.
+Chairman dashboard:
+
+Hero card: "Next Commission Sitting" with date, time, item count, "Open Agenda" button
+"Pending final decisions" count chip
+Recent decisions summary (last 5)
+No meeting creation, no approval queues
+
+Chairman PS dashboard:
+
+Hero card: Next sitting with finalize button if within 2 days
+Stats row: Pending from Wings | Pending at R&A | Consolidated | Total Items
+Quick actions: "Create Meeting", "Generate Report"
+Agenda items needing attention (returned items, items awaiting finalization)
+
+Wing AS/JS dashboard:
+
+"Items awaiting your approval" — large number prominently
+Items list with inline Approve/Return buttons
+"My wing's submitted items" with R&A status
+
+Wing Member dashboard:
+
+My recent agenda items with status chips
+"Create Agenda Item" as large prominent button
+Returned items at top (need attention)
+
+Commission Member dashboard:
+
+Upcoming sittings list
+"Agenda ready to review" banner when sitting is finalized
+My notes count
+
+Web Admin dashboard:
+
+User count, Wing count, system health
+Recent user activity log
+
+
+6. DATA TABLES
+Use MUI DataGrid for all tabular data.
+Required props for every DataGrid:
+jsx<DataGrid
+  rows={rows}
+  columns={columns}
+  pageSize={20}
+  rowsPerPageOptions={[10, 20, 50]}
+  disableSelectionOnClick
+  autoHeight
+  sx={{ border: 'none' }}
+  components={{ Toolbar: CustomToolbar }}
+/>
+CustomToolbar must include:
+
+Search input (debounced, 300ms)
+Filter button (MUI GridToolbarFilterButton)
+Export CSV button
+
+Column rules:
+
+Header: 12px uppercase, #6B7280, bold
+Cell text: 14px, #111827
+Row height: 56px minimum (NOT 52px — 44px content + 12px padding)
+Hover row: bg #F8FAFF
+Status column: ALWAYS renders a MUI Chip with the semantic colours above
+
+Action column:
+jsx// Minimum — never just icons
+<Button size="small" startIcon={<VisibilityIcon/>} sx={{minWidth: 100}}>
+  View
+</Button>
+Never: <IconButton><VisibilityIcon/></IconButton> alone.
+Each action button must have a text label. The icon is decorative.
+
+7. STATUS CHIPS
+jsx// Standard status chip — use everywhere consistently
+const StatusChip = ({ status }) => {
+  const config = {
+    DRAFT:                { label: 'Draft',            bg: '#F3F4F6', color: '#4B5563' },
+    PENDING_WING_APPROVAL:{ label: 'Pending Approval', bg: '#FEF3C7', color: '#92400E' },
+    WING_APPROVED:        { label: 'Wing Approved',    bg: '#DBEAFE', color: '#1E40AF' },
+    PENDING_RNA:          { label: 'Pending R&A',      bg: '#EDE9FE', color: '#5B21B6' },
+    CONSOLIDATED:         { label: 'Consolidated',     bg: '#D1FAE5', color: '#065F46' },
+    FINALIZED:            { label: 'Finalized',        bg: '#FEF9C3', color: '#854D0E' },
+    SUPPLEMENTARY:        { label: 'Supplementary',    bg: '#F3E8FF', color: '#6B21A8' },
+    VOTED:                { label: 'Voted',            bg: '#DCFCE7', color: '#14532D' },
+    CHAIRMAN_DECIDED:     { label: 'Decided',          bg: '#F0FDF4', color: '#166534' },
+    RETURNED:             { label: 'Returned',         bg: '#FEE2E2', color: '#991B1B' },
+    ARCHIVED:             { label: 'Archived',         bg: '#F1F5F9', color: '#475569' },
+  };
+  const c = config[status] || { label: status, bg: '#F3F4F6', color: '#4B5563' };
+  return (
+    <Chip
+      label={c.label}
+      size="small"
+      sx={{
+        backgroundColor: c.bg,
+        color: c.color,
+        fontWeight: 600,
+        fontSize: '11px',
+        height: '22px',
+        '& .MuiChip-label': { px: 1.5 }
+      }}
+    />
+  );
+};
+
+8. FORMS
+All forms must use a multi-step stepper for more than 4 fields.
+Single-page forms with 8+ fields cause anxiety for non-tech users.
+Agenda creation uses a 3-step stepper:
+
+Step 1: Select Meeting + Wing + Form Type
+Step 2: Fill Agenda Details (topic, file number, description, discussion points)
+Step 3: Attachments (upload PDFs, enter friendly names)
+
+Stepper styling:
+jsx<Stepper activeStep={step} sx={{ mb: 4 }}>
+  <Step><StepLabel>Select Meeting</StepLabel></Step>
+  <Step><StepLabel>Agenda Details</StepLabel></Step>
+  <Step><StepLabel>Attachments</StepLabel></Step>
+</Stepper>
+Required field indicator: Red asterisk (*) next to label, never below input.
+Error messages: Below the field in red, 13px. Never replace the label. Never use toast for inline validation errors.
+Character count: Show for all textarea fields. Format: "47/500 characters".
+Subject/Topic field: 500 character limit minimum (not 100).
+Auto-save: Every form must auto-save as DRAFT every 30 seconds.
+Show "Saved as draft" with timestamp in bottom-right of form.
+Attachment upload:
+
+Drag-and-drop zone: dashed border, centred upload icon, clear instruction text
+After upload: immediately prompt for friendly name in an inline field
+Show attachment list with: friendly name (bold), original filename (grey, small), file size, delete icon
+Multiple attachments supported — list grows downward
+
+
+9. PDF SIDE PANEL VIEWER
+The PDF viewer is NOT a modal popup. It is an integrated side panel.
+Layout when PDF viewer is open:
+┌─────────────────────────────────────────────────────────────┐
+│ Agenda Item Detail (40%)  │  PDF Side Panel (60%)           │
+│                           │  ┌──────────────────────────┐   │
+│ Topic, description, etc.  │  │ Toolbar: friendly name,  │   │
+│                           │  │ close X, page nav, zoom  │   │
+│ [Other attachments]       │  │                          │   │
+│                           │  │    PDF content           │   │
+│                           │  │    (react-pdf)           │   │
+│                           │  │                          │   │
+│                           │  ├──────────────────────────┤   │
+│                           │  │ 🔒 My private notes      │   │
+│                           │  │ [text area + save]       │   │
+│                           │  │ ─────────────────        │   │
+│                           │  │ Note 1 (timestamp)       │   │
+│                           │  │ Note 2 (timestamp)       │   │
+└───────────────────────────┴──────────────────────────────────┘
+PDF toolbar (custom, not browser-native):
+
+Document friendly name (bold, 15px)
+Page: "Page 2 of 7" with ← → arrows and direct input
+Zoom: − 80% +
+Close X button (right-aligned)
+All styled consistently with the rest of the application.
+
+Notes panel:
+
+Header: "🔒 My private notes" with lock icon and tooltip "Only you can see these"
+Textarea: 4 rows, auto-expand
+Save Note button (blue, 44px tall)
+Notes list: newest first, each showing note text + relative timestamp + edit/delete
+
+
+10. CONFIRMATION DIALOGS
+Three types — use the right one:
+
+Destructive confirmation (Return, Archive, Delete):
+
+Title: "Return this agenda item?" (28px, red icon)
+Body: "This will send the item back to [Wing Name] with your comments.
+       The submitter will be notified."
+Input: Comments field (required, minimum 10 chars)
+Buttons: [Cancel] [Return Item]  ← red filled button
+
+Consequential confirmation (Approve, Finalize, Submit):
+
+Title: "Finalize this sitting?" (28px, gold icon)
+Body: "This will lock all 14 agenda items. No new items can be added
+       after finalization. Serial numbers will be assigned."
+Checklist: ✓ 14 items consolidated  ✓ All wings notified
+Buttons: [Cancel] [Finalize Sitting]  ← gold filled button
+
+Simple confirmation (routine actions):
+
+Title: "Approve agenda item?"
+Buttons: [Cancel] [Approve]  ← blue filled button
+RULE: Never silently execute a destructive action. Always confirm.
+
+11. AGENDA APPROVAL PAGE
+Redesign from card list to a more actionable layout:
+┌─────────────────────────────────────────────────────────────┐
+│  PENDING APPROVAL (3)          [Approve All] [Filter ▾]    │
+├─────────────────────────────────────────────────────────────┤
+│ ● GR(AS) — Jan2026-1                        [Draft chip]   │
+│   Demo Sitting 7 Jan 2026 · 10:00 am · GR wing            │
+│   File No: Jan2026-1                                        │
+│                      [View Details ↗]  [Return]  [Approve] │
+├─────────────────────────────────────────────────────────────┤
+│ ...                                                         │
+└─────────────────────────────────────────────────────────────┘
+Remove "Agenda No: N/A  Serial No: N/A" entirely — show only when assigned.
+Compact rows: 80px height per item.
+Approve/Return buttons always visible per row — not hidden behind "View Details".
+
+12. CALENDAR
+Replace generic grid calendar with a purpose-built sittings calendar:
+
+Today's date: prominent gold background circle
+Sitting events: full-width chips showing title + time + item count
+Events in past: 50% opacity
+Events that need action (pending approval): small red dot indicator
+"Next Sitting" card pinned above the calendar:
+
+  ┌────────────────────────────────┐
+  │ NEXT SITTING                   │
+  │ Monday, 7 January 2026         │
+  │ 10:00 AM  ·  14 agenda items   │
+  │ [View Agenda]                  │
+  └────────────────────────────────┘
+
+13. LOADING & EMPTY STATES
+Loading: Use MUI Skeleton — never spinners in the main content area.
+jsx// Table loading
+<Skeleton variant="rectangular" height={56} sx={{ mb: 1, borderRadius: 1 }} />
+// Repeat 5x
+Empty states: Custom illustration + helpful text + primary action.
+Never show an empty table with just column headers.
+[icon — e.g. clipboard]
+No agenda items yet
+Create your first agenda item for the upcoming sitting.
+[+ Create Agenda Item]
+
+14. NOTIFICATIONS
+Notification bell in AppBar:
+
+Shows unread count badge (red, max "99+")
+Dropdown panel: last 10 notifications, 320px wide
+Each notification: icon (type-based), title, timestamp, unread indicator
+"Mark all read" link
+Polling every 60 seconds (not WebSocket — simpler, more stable)
+
+Toast notifications (MUI Snackbar):
+
+Success: green, bottom-left, 4 second auto-dismiss
+Error: red, bottom-left, stays until closed
+Info: blue, bottom-left, 4 second auto-dismiss
+Position: bottom-left (NOT top-right — top-right covers content)
+Max 1 visible at a time. Queue subsequent toasts.
+
+
+15. RESPONSIVE
+This is primarily a desktop application but must not break on a 1024px wide laptop.
+
+Sidebar: collapses to icons-only at < 1200px (not hidden — icon rail)
+DataGrid: horizontal scroll on < 900px, not column removal
+Cards: stack to single column on < 768px
+PDF side panel: full-screen overlay on < 1024px
+Minimum supported viewport: 1024px × 768px
