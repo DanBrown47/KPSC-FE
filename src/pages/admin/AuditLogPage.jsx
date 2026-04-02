@@ -13,7 +13,7 @@ export const AuditLogPage = () => {
     page_size: paginationModel.pageSize,
   });
 
-  const rows = data?.results || data || [];
+  const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
   const rowCount = data?.count || rows.length;
 
   const columns = [
@@ -42,7 +42,7 @@ export const AuditLogPage = () => {
   return (
     <Box>
       <PageHeader
-        title="Audit Log"
+        title="Audit Log - To be developed"
         breadcrumbs={[{ label: 'Admin' }, { label: 'Audit Log' }]}
       />
       <DataGrid

@@ -15,7 +15,7 @@ export const RNADashboard = () => {
   const { currentUser } = useAuth();
 
   const { data: allItems, isLoading } = useGetAgendaItemsQuery({ limit: 100 });
-  const items = allItems?.results || allItems || [];
+  const items = Array.isArray(allItems?.results) ? allItems.results : Array.isArray(allItems) ? allItems : [];
   const pendingRNA = items.filter((i) => i.status === 'PENDING_RNA');
   const wingApproved = items.filter((i) => i.status === 'WING_APPROVED');
   const consolidated = items.filter((i) => i.status === 'CONSOLIDATED');

@@ -15,7 +15,7 @@ export const useNotifications = () => {
 
   const [markRead] = useMarkNotificationReadMutation();
 
-  const notifications = data?.results || data || [];
+  const notifications = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
   const unreadCount = notifications.filter((n) => !n.is_read).length;
 
   const handleMarkRead = async (id) => {

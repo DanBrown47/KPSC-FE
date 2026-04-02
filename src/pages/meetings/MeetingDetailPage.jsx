@@ -68,7 +68,7 @@ export const MeetingDetailPage = () => {
   const { isChairmanPS } = usePermissions();
   const { data: meeting, isLoading } = useGetMeetingQuery(id);
   const { data: agendaData } = useGetAgendaItemsQuery({ meeting_id: id, limit: 100 });
-  const agendaItems = agendaData?.results || agendaData || [];
+  const agendaItems = Array.isArray(agendaData?.results) ? agendaData.results : Array.isArray(agendaData) ? agendaData : [];
 
   if (isLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;

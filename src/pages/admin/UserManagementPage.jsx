@@ -15,19 +15,175 @@ import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { useGetUsersQuery, useCreateUserMutation, useUpdateUserMutation, useDeactivateUserMutation, useActivateUserMutation } from '../../store/api/usersApi.js';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { useGetUsersQuery, useCreateUserMutation, useUpdateUserMutation, useDeactivateUserMutation, useActivateUserMutation, useGetWingRolesQuery, useAddWingRoleMutation, useRemoveWingRoleMutation, useGetPermissionRolesQuery, useAddPermissionRoleMutation, useRemovePermissionRoleMutation } from '../../store/api/usersApi.js';
+import { useGetWingsQuery } from '../../store/api/wingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 
-const ROLES = ['WEB_ADMIN', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'RNA_ASJS', 'WING_ASJS', 'WING_MEMBER'];
+const ROLES = ['WEB_ADMIN', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'RNA_ASJS', 'WING_ASJS', 'WING_MEMBER', 'SECRETARY', 'SECRETARY_PA', 'CA', 'RA_WING'];
+
+const WING_ROLE_OPTIONS = [
+  { value: 'AS_JS', label: 'AS/JS' },
+  { value: 'WING_MEMBER', label: 'Wing Member' },
+  { value: 'CA', label: 'CA' },
+];
+
+const PERMISSION_CHOICES = [
+  { value: 'meeting_convener', label: 'Meeting Convener' },
+  { value: 'agenda_signoff_authority', label: 'Agenda Sign-off Authority' },
+  { value: 'committee_agenda_approver', label: 'Committee Agenda Approver' },
+  { value: 'wing_agenda_approver', label: 'Wing Agenda Approver' },
+  { value: 'pre_meeting_agenda_approver', label: 'Pre-Meeting Agenda Approver' },
+  { value: 'wing_user', label: 'Wing User' },
+  { value: 'user_manager', label: 'User Manager' },
+  { value: 'config_manager', label: 'Config Manager' },
+];
 
 const getInitials = (user) => {
-  // UserProfileSerializer nests first_name/last_name under user.user; full_name is top-level
   const f = user.user?.first_name?.[0] || user.full_name?.[0] || '';
   const l = user.user?.last_name?.[0] || user.full_name?.split(' ')?.[1]?.[0] || '';
   return (f + l).toUpperCase() || user.username?.[0]?.toUpperCase() || 'U';
+};
+
+const WingAssignmentsTab = ({ userId }) => {
+  const dispatch = useDispatch();
+  const [newWing, setNewWing] = useState('');
+  const [newRole, setNewRole] = useState('WING_MEMBER');
+  const { data: wingRoles = [] } = useGetWingRolesQuery(userId);
+  const { data: wingsData } = useGetWingsQuery();
+  const [addWingRole] = useAddWingRoleMutation();
+  const [removeWingRole] = useRemoveWingRoleMutation();
+  const wings = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
+
+  const handleAdd = async () => {
+    if (!newWing) return;
+    try {
+      await addWingRole({ userId, wing: newWing, wing_role: newRole, is_active: true }).unwrap();
+      setNewWing('');
+      dispatch(showToast({ message: 'Wing role added', severity: 'success' }));
+    } catch {
+      dispatch(showToast({ message: 'Failed to add wing role', severity: 'error' }));
+    }
+  };
+
+  const handleRemove = async (roleId) => {
+    try {
+      await removeWingRole(roleId).unwrap();
+      dispatch(showToast({ message: 'Wing role removed', severity: 'info' }));
+    } catch {
+      dispatch(showToast({ message: 'Failed to remove wing role', severity: 'error' }));
+    }
+  };
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
+        <TextField select label="Wing" value={newWing} onChange={(e) => setNewWing(e.target.value)} size="small" sx={{ flex: 2 }}>
+          {wings.map((w) => <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>)}
+        </TextField>
+        <TextField select label="Role" value={newRole} onChange={(e) => setNewRole(e.target.value)} size="small" sx={{ flex: 1 }}>
+          {WING_ROLE_OPTIONS.map((r) => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
+        </TextField>
+        <Button variant="contained" size="small" onClick={handleAdd} disabled={!newWing} sx={{ mt: 0.5 }}>Add</Button>
+      </Box>
+      {wingRoles.length === 0 ? (
+        <Typography variant="body2" color="text.secondary">No wing assignments yet.</Typography>
+      ) : (
+        wingRoles.map((wr) => (
+          <Box key={wr.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, border: '1px solid #E2E8F0', borderRadius: 1 }}>
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="body2" fontWeight={600}>{wr.wing_name}</Typography>
+              <Typography variant="caption" color="text.secondary">{wr.wing_role}</Typography>
+            </Box>
+            <Chip label={wr.is_active ? 'Active' : 'Inactive'} size="small" sx={{ bgcolor: wr.is_active ? '#ECFDF5' : '#F3F4F6', color: wr.is_active ? '#059669' : '#6B7280' }} />
+            <IconButton size="small" color="error" onClick={() => handleRemove(wr.id)}>
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          </Box>
+        ))
+      )}
+    </Box>
+  );
+};
+
+const PermissionRolesTab = ({ userId }) => {
+  const dispatch = useDispatch();
+  const [selectedWingRoleId, setSelectedWingRoleId] = useState('');
+  const [newPerm, setNewPerm] = useState('');
+  const { data: wingRoles = [] } = useGetWingRolesQuery(userId);
+  const { data: permRoles = [] } = useGetPermissionRolesQuery(selectedWingRoleId, { skip: !selectedWingRoleId });
+  const [addPermRole] = useAddPermissionRoleMutation();
+  const [removePermRole] = useRemovePermissionRoleMutation();
+
+  const existing = permRoles.map((p) => p.permission_role);
+  const available = PERMISSION_CHOICES.filter((p) => !existing.includes(p.value));
+
+  const handleAdd = async () => {
+    if (!selectedWingRoleId || !newPerm) return;
+    try {
+      await addPermRole({ user_wing_role: selectedWingRoleId, permission_role: newPerm }).unwrap();
+      setNewPerm('');
+      dispatch(showToast({ message: 'Permission role added', severity: 'success' }));
+    } catch {
+      dispatch(showToast({ message: 'Failed to add permission role', severity: 'error' }));
+    }
+  };
+
+  if (wingRoles.length === 0) {
+    return <Typography variant="body2" color="text.secondary">Assign wing roles on the previous tab first.</Typography>;
+  }
+
+  return (
+    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+      <TextField
+        select
+        label="Wing Role"
+        value={selectedWingRoleId}
+        onChange={(e) => { setSelectedWingRoleId(e.target.value); setNewPerm(''); }}
+        size="small"
+        fullWidth
+      >
+        {wingRoles.map((wr) => (
+          <MenuItem key={wr.id} value={wr.id}>{wr.wing_name} — {wr.wing_role}</MenuItem>
+        ))}
+      </TextField>
+      {selectedWingRoleId && (
+        <>
+          <Box sx={{ display: 'flex', gap: 1 }}>
+            <TextField
+              select
+              label="Permission"
+              value={newPerm}
+              onChange={(e) => setNewPerm(e.target.value)}
+              size="small"
+              sx={{ flex: 1 }}
+              disabled={available.length === 0}
+            >
+              {available.map((p) => <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>)}
+            </TextField>
+            <Button variant="contained" size="small" onClick={handleAdd} disabled={!newPerm} sx={{ mt: 0.5 }}>Add</Button>
+          </Box>
+          {permRoles.length === 0 ? (
+            <Typography variant="body2" color="text.secondary">No permission roles assigned to this wing role.</Typography>
+          ) : (
+            permRoles.map((pr) => (
+              <Box key={pr.id} sx={{ display: 'flex', alignItems: 'center', p: 1.5, border: '1px solid #E2E8F0', borderRadius: 1 }}>
+                <Typography variant="body2" sx={{ flex: 1 }}>
+                  {PERMISSION_CHOICES.find((p) => p.value === pr.permission_role)?.label || pr.permission_role}
+                </Typography>
+                <IconButton size="small" color="error" onClick={() => removePermRole(pr.id)}>
+                  <DeleteIcon fontSize="small" />
+                </IconButton>
+              </Box>
+            ))
+          )}
+        </>
+      )}
+    </Box>
+  );
 };
 
 const UserDrawer = ({ open, user, onClose, onSave }) => {
@@ -68,18 +224,20 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
           </Box>
         )}
         {!isNew && tab === 1 && (
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" color="text.secondary">Wing role assignments would be configured here.</Typography>
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <WingAssignmentsTab userId={user.id} />
           </Box>
         )}
         {!isNew && tab === 2 && (
-          <Box sx={{ flex: 1 }}>
-            <Typography variant="body2" color="text.secondary">Permission roles would be configured here.</Typography>
+          <Box sx={{ flex: 1, overflow: 'auto' }}>
+            <PermissionRolesTab userId={user.id} />
           </Box>
         )}
         <Box sx={{ display: 'flex', gap: 1, pt: 2, mt: 'auto', borderTop: '1px solid #E2E8F0' }}>
           <Button variant="outlined" onClick={onClose} fullWidth>Cancel</Button>
-          <Button variant="contained" onClick={() => onSave(form)} fullWidth>Save</Button>
+          {(isNew || tab === 0) && (
+            <Button variant="contained" onClick={() => onSave(form)} fullWidth>Save</Button>
+          )}
         </Box>
       </Box>
     </Drawer>
@@ -102,7 +260,7 @@ export const UserManagementPage = () => {
   const [deactivateUser] = useDeactivateUserMutation();
   const [activateUser] = useActivateUserMutation();
 
-  const rows = data?.results || data || [];
+  const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
   const rowCount = data?.count || rows.length;
 
   const handleSave = async (form) => {

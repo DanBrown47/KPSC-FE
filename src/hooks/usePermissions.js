@@ -9,6 +9,9 @@ const ROLE_HIERARCHY = {
   RNA_ASJS: 3,
   WING_ASJS: 2,
   WING_MEMBER: 1,
+  SECRETARY_PA: 3,
+  CA: 1,
+  RA_WING: 1,
 };
 
 export const usePermissions = () => {

@@ -21,7 +21,7 @@ export const ReferenceNotesPanel = ({ agendaItemId, attachmentId }) => {
   const [createNote, { isLoading }] = useCreateReferenceNoteMutation();
 
   // Double-filter: API filters + client-side filter
-  const notes = (allNotes?.results || allNotes || [])
+  const notes = (Array.isArray(allNotes?.results) ? allNotes.results : Array.isArray(allNotes) ? allNotes : [])
     .filter((n) => n.created_by_id === currentUser?.id || n.created_by?.id === currentUser?.id);
 
   const handleSubmit = async () => {

@@ -17,8 +17,8 @@ export const ChairmanPSDashboard = () => {
   const { data: meetingsData, isLoading: meetingsLoading } = useGetMeetingsQuery({ status: 'SCHEDULED', limit: 5 });
   const { data: agendaData, isLoading: agendaLoading } = useGetAgendaItemsQuery({ status: 'CONSOLIDATED', limit: 100 });
 
-  const meetings = meetingsData?.results || meetingsData || [];
-  const consolidatedItems = agendaData?.results || agendaData || [];
+  const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
+  const consolidatedItems = Array.isArray(agendaData?.results) ? agendaData.results : Array.isArray(agendaData) ? agendaData : [];
   const nextMeeting = meetings[0];
 
   return (

@@ -210,7 +210,7 @@ export const SittingPage = () => {
     limit: 100,
   });
 
-  const allItems = agendaData?.results || agendaData || [];
+  const allItems = Array.isArray(agendaData?.results) ? agendaData.results : Array.isArray(agendaData) ? agendaData : [];
   const regularItems = allItems.filter((i) => !i.is_supplementary);
   const supplementaryItems = allItems.filter((i) => i.is_supplementary);
 

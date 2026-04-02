@@ -21,7 +21,7 @@ export const MeetingListPage = () => {
     page_size: paginationModel.pageSize,
   });
 
-  const rows = data?.results || data || [];
+  const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
   const rowCount = data?.count || rows.length;
 
   const columns = [

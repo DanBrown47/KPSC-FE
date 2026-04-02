@@ -26,7 +26,7 @@ export const ReportsPage = () => {
   const { startGeneration, status, downloadUrl, reset } = useReportGeneration();
 
   const { data: meetingsData } = useGetMeetingsQuery({ limit: 50 });
-  const meetings = meetingsData?.results || meetingsData || [];
+  const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
 
   const handleGenerate = () => {
     if (!meetingId || !reportType) return;

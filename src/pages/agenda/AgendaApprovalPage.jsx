@@ -26,7 +26,7 @@ export const AgendaApprovalPage = () => {
 
   const statusFilter = isRNAASJS ? 'PENDING_RNA' : 'PENDING_WING_APPROVAL';
   const { data, isLoading } = useGetAgendaItemsQuery({ status: statusFilter, limit: 100 });
-  const items = data?.results || data || [];
+  const items = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
   const [approveWing] = useApproveWingMutation();
   const [returnFromWing] = useReturnFromWingMutation();

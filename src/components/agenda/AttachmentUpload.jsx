@@ -44,7 +44,7 @@ export const AttachmentUpload = ({ agendaItemId }) => {
   const [uploadAttachment] = useUploadAttachmentMutation();
   const [deleteAttachment] = useDeleteAttachmentMutation();
   const { data: attachmentsData, isLoading } = useGetAttachmentsQuery(agendaItemId, { skip: !agendaItemId });
-  const existingAttachments = attachmentsData?.results || attachmentsData || [];
+  const existingAttachments = Array.isArray(attachmentsData?.results) ? attachmentsData.results : Array.isArray(attachmentsData) ? attachmentsData : [];
 
   const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
     // Handle rejected files

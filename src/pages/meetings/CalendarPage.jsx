@@ -42,7 +42,11 @@ export const CalendarPage = () => {
   });
   const [createMeeting, { isLoading: creating }] = useCreateMeetingMutation();
 
-  const meetings = meetingsData?.results || meetingsData || [];
+  const meetings = Array.isArray(meetingsData?.results)
+    ? meetingsData.results
+    : Array.isArray(meetingsData)
+    ? meetingsData
+    : [];
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);

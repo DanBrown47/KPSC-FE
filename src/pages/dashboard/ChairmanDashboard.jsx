@@ -14,7 +14,7 @@ export const ChairmanDashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   const { data: meetingsData, isLoading } = useGetMeetingsQuery({ status: 'FINALIZED', limit: 5 });
-  const meetings = meetingsData?.results || meetingsData || [];
+  const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
   const nextMeeting = meetings[0];
 
   return (

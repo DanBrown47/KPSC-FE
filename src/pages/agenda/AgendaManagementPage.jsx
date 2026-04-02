@@ -43,7 +43,7 @@ export const AgendaManagementPage = () => {
     status: statusFilter || undefined,
   });
 
-  const rows = data?.results || data || [];
+  const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
   const rowCount = data?.count || rows.length;
 
   const columns = [

@@ -16,7 +16,7 @@ export const WingASJSDashboard = () => {
   const { currentUser } = useAuth();
 
   const { data: allItems, isLoading } = useGetAgendaItemsQuery({ limit: 100 });
-  const items = allItems?.results || allItems || [];
+  const items = Array.isArray(allItems?.results) ? allItems.results : Array.isArray(allItems) ? allItems : [];
   const returnedItems = items.filter((i) => i.status === 'DRAFT' && i.return_comment);
   const pendingApproval = items.filter((i) => i.status === 'PENDING_WING_APPROVAL');
 

@@ -121,7 +121,7 @@ export const AgendaDetailPage = () => {
 
   if (!item) return null;
 
-  const attachmentList = attachments?.results || attachments || [];
+  const attachmentList = Array.isArray(attachments?.results) ? attachments.results : Array.isArray(attachments) ? attachments : [];
 
   return (
     <Box>

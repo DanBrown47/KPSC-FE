@@ -52,9 +52,9 @@ export const CreateAgendaPage = () => {
 
   const { data: existingItem, isLoading: itemLoading } = useGetAgendaItemQuery(id, { skip: !id });
   const { data: wingsData } = useGetWingsQuery();
-  const wings = wingsData?.results || wingsData || [];
+  const wings = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
   const { data: meetingsData } = useGetMeetingsQuery({ status: 'SCHEDULED', limit: 50 });
-  const meetings = meetingsData?.results || meetingsData || [];
+  const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
 
   const [createAgendaItem, { isLoading: creating }] = useCreateAgendaItemMutation();
   const [updateAgendaItem] = useUpdateAgendaItemMutation();

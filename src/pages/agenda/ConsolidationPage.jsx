@@ -21,7 +21,7 @@ export const ConsolidationPage = () => {
   const [serialNumbers, setSerialNumbers] = useState({});
 
   const { data, isLoading } = useGetAgendaItemsQuery({ status: 'PENDING_RNA', limit: 100 });
-  const items = data?.results || data || [];
+  const items = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
   const [consolidate] = useConsolidateMutation();
   const [bulkApprove] = useBulkApproveRNAMutation();
