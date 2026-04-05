@@ -34,6 +34,7 @@ export const AppShell = () => {
             p: 3,
             maxWidth: 1440,
             width: '100%',
+            overflowY: 'auto',
           }}
         >
           <ErrorBoundary>

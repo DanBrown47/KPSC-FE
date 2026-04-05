@@ -324,6 +324,49 @@ export const UserManagementPage = () => {
       ),
     },
     {
+      field: 'wing',
+      headerName: 'Wing',
+      flex: 1,
+      minWidth: 160,
+      sortable: false,
+      renderCell: ({ row }) => {
+        const wings = Array.isArray(row.wing_roles) ? row.wing_roles.filter((wr) => wr.is_active) : [];
+        if (wings.length === 0) return <Typography variant="body2" color="text.secondary">—</Typography>;
+        return (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 0.5 }}>
+            {wings.map((wr) => (
+              <Chip key={wr.id} label={wr.wing_name} size="small" variant="outlined" sx={{ fontSize: '0.7rem' }} />
+            ))}
+          </Box>
+        );
+      },
+    },
+    {
+      field: 'permission_role',
+      headerName: 'Permission Role',
+      flex: 1,
+      minWidth: 200,
+      sortable: false,
+      renderCell: ({ row }) => {
+        const allPerms = Array.isArray(row.wing_roles)
+          ? [...new Set(row.wing_roles.flatMap((wr) => (wr.permission_roles || []).map((pr) => pr.permission_role)))]
+          : [];
+        if (allPerms.length === 0) return <Typography variant="body2" color="text.secondary">—</Typography>;
+        return (
+          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, py: 0.5 }}>
+            {allPerms.map((perm) => (
+              <Chip
+                key={perm}
+                label={PERMISSION_CHOICES.find((p) => p.value === perm)?.label || perm.replace(/_/g, ' ')}
+                size="small"
+                sx={{ bgcolor: '#EFF6FF', color: '#1D4ED8', fontSize: '0.7rem' }}
+              />
+            ))}
+          </Box>
+        );
+      },
+    },
+    {
       field: 'is_active',
       headerName: 'Status',
       width: 100,
@@ -375,6 +418,7 @@ export const UserManagementPage = () => {
         pageSizeOptions={[10, 20, 50]}
         disableRowSelectionOnClick
         autoHeight
+        getRowHeight={() => 'auto'}
         sx={{ bgcolor: 'background.paper' }}
       />
       <UserDrawer
