@@ -52,11 +52,14 @@ const WingAssignmentsTab = ({ userId }) => {
   const dispatch = useDispatch();
   const [newWing, setNewWing] = useState('');
   const [newRole, setNewRole] = useState('WING_MEMBER');
-  const { data: wingRoles = [] } = useGetWingRolesQuery(userId);
-  const { data: wingsData } = useGetWingsQuery();
+  const { data: wingRolesData } = useGetWingRolesQuery(userId);
+  const { data: wingsData } = useGetWingsQuery({ is_active: true, page_size: 200 });
   const [addWingRole] = useAddWingRoleMutation();
   const [removeWingRole] = useRemoveWingRoleMutation();
-  const wings = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
+  const wingRoles = Array.isArray(wingRolesData?.results) ? wingRolesData.results : Array.isArray(wingRolesData) ? wingRolesData : [];
+  const allWings = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
+  const assignedWingIds = new Set(wingRoles.map((wr) => wr.wing));
+  const availableWings = allWings.filter((w) => !assignedWingIds.has(w.id));
 
   const handleAdd = async () => {
     if (!newWing) return;
@@ -81,13 +84,16 @@ const WingAssignmentsTab = ({ userId }) => {
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-        <TextField select label="Wing" value={newWing} onChange={(e) => setNewWing(e.target.value)} size="small" sx={{ flex: 2 }}>
-          {wings.map((w) => <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>)}
+        <TextField select label="Wing" value={newWing} onChange={(e) => setNewWing(e.target.value)} size="small" sx={{ flex: 2 }} disabled={availableWings.length === 0}>
+          {availableWings.length === 0
+            ? <MenuItem value="" disabled>All wings assigned</MenuItem>
+            : availableWings.map((w) => <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>)
+          }
         </TextField>
         <TextField select label="Role" value={newRole} onChange={(e) => setNewRole(e.target.value)} size="small" sx={{ flex: 1 }}>
           {WING_ROLE_OPTIONS.map((r) => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
         </TextField>
-        <Button variant="contained" size="small" onClick={handleAdd} disabled={!newWing} sx={{ mt: 0.5 }}>Add</Button>
+        <Button variant="contained" size="small" onClick={handleAdd} disabled={!newWing || availableWings.length === 0} sx={{ mt: 0.5 }}>Add</Button>
       </Box>
       {wingRoles.length === 0 ? (
         <Typography variant="body2" color="text.secondary">No wing assignments yet.</Typography>

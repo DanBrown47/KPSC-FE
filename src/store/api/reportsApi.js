@@ -7,14 +7,16 @@ export const reportsApi = createApi({
   tagTypes: ['Report'],
   endpoints: (builder) => ({
     generateReport: builder.mutation({
-      query: ({ meetingId, reportType, params }) => ({
-        url: `reports/generate/`,
+      query: ({ meetingId, reportType }) => ({
+        url: 'reports/generate/',
         method: 'POST',
-        body: { meeting_id: meetingId, report_type: reportType, ...params },
+        body: { meeting_id: meetingId, report_type: reportType },
       }),
+      invalidatesTags: ['Report'],
     }),
     getReportStatus: builder.query({
-      query: (taskId) => `reports/status/${taskId}/`,
+      query: (reportId) => `reports/${reportId}/`,
+      providesTags: (result, error, reportId) => [{ type: 'Report', id: reportId }],
     }),
     getReports: builder.query({
       query: (params) => ({ url: 'reports/', params }),

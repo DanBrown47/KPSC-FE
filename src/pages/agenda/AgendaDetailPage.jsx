@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -15,11 +15,12 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import IconButton from '@mui/material/IconButton';
-import EditIcon from '@mui/icons-material/Edit';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import UploadFileIcon from '@mui/icons-material/UploadFile';
+import DownloadIcon from '@mui/icons-material/Download';
 import { format } from 'date-fns';
-import { useGetAgendaItemQuery, useGetAttachmentsQuery, useSubmitAgendaItemMutation, useApproveWingMutation, useReturnFromWingMutation, useApproveRNAMutation, useReturnFromRNAMutation } from '../../store/api/agendaApi.js';
+import { useGetAgendaItemQuery, useGetAttachmentsQuery, useSubmitAgendaItemMutation, useApproveWingMutation, useReturnFromWingMutation, useApproveRNAMutation, useReturnFromRNAMutation, useUploadApprovalDocumentMutation } from '../../store/api/agendaApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
@@ -53,6 +54,7 @@ export const AgendaDetailPage = () => {
 
   const [returnDialog, setReturnDialog] = useState({ open: false, type: null });
   const [pdfPanel, setPdfPanel] = useState({ open: false, attachment: null });
+  const approvalFileRef = useRef(null);
 
   const { data: item, isLoading } = useGetAgendaItemQuery(id);
   const { data: attachments } = useGetAttachmentsQuery(id, { skip: !id });
@@ -62,6 +64,26 @@ export const AgendaDetailPage = () => {
   const [returnFromWing] = useReturnFromWingMutation();
   const [approveRNA] = useApproveRNAMutation();
   const [returnFromRNA] = useReturnFromRNAMutation();
+  const [uploadApprovalDocument, { isLoading: uploadingApproval }] = useUploadApprovalDocumentMutation();
+
+  const isChairmanPS = currentUser?.global_role === 'CHAIRMAN_PS';
+  const POST_DECISION_STATUSES = ['CHAIRMAN_DECIDED', 'DEFERRED', 'UNAPPROVED', 'ARCHIVED'];
+  const showApprovalDoc = item && POST_DECISION_STATUSES.includes(item.status);
+  const canUploadApproval = isChairmanPS && item && ['CHAIRMAN_DECIDED', 'DEFERRED', 'UNAPPROVED'].includes(item.status);
+
+  const handleApprovalUpload = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      await uploadApprovalDocument({ agendaItemId: id, formData }).unwrap();
+      dispatch(showToast({ message: 'Approval document uploaded', severity: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.data?.detail || 'Upload failed', severity: 'error' }));
+    }
+    e.target.value = '';
+  };
 
   const actions = item ? getAgendaActions(item, currentUser) : [];
   const locked = item ? isItemLocked(item) : false;
@@ -278,6 +300,64 @@ export const AgendaDetailPage = () => {
                 <Typography variant="h5" gutterBottom>Admin Details</Typography>
                 <FieldRow label="Priority" value={item.priority} />
                 <FieldRow label="Meeting" value={item.meeting?.title} />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Approval document — visible post-decision */}
+          {showApprovalDoc && (
+            <Card sx={{ mb: 2 }}>
+              <CardContent>
+                <Typography variant="h5" gutterBottom>Approval Document</Typography>
+                {item.approval_document ? (
+                  <Box>
+                    <Typography variant="body2" color="text.secondary" gutterBottom>
+                      {item.approval_document.original_filename}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {item.approval_document.file_size
+                        ? `${(item.approval_document.file_size / 1024).toFixed(0)} KB · `
+                        : ''}
+                      Uploaded {item.approval_document.uploaded_at
+                        ? format(new Date(item.approval_document.uploaded_at), 'dd MMM yyyy')
+                        : ''}
+                    </Typography>
+                    <Box sx={{ mt: 1 }}>
+                      <Button
+                        size="small"
+                        variant="outlined"
+                        startIcon={<DownloadIcon />}
+                        href={`/api/v1/agenda/${id}/approval_document/download/`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        Download PDF
+                      </Button>
+                    </Box>
+                  </Box>
+                ) : (
+                  <Typography variant="body2" color="text.secondary">No approval document uploaded.</Typography>
+                )}
+                {canUploadApproval && (
+                  <Box sx={{ mt: 1.5 }}>
+                    <input
+                      ref={approvalFileRef}
+                      type="file"
+                      accept=".pdf"
+                      style={{ display: 'none' }}
+                      onChange={handleApprovalUpload}
+                    />
+                    <Button
+                      size="small"
+                      variant="outlined"
+                      startIcon={uploadingApproval ? <CircularProgress size={14} /> : <UploadFileIcon />}
+                      onClick={() => approvalFileRef.current?.click()}
+                      disabled={uploadingApproval}
+                    >
+                      {item.approval_document ? 'Replace PDF' : 'Upload PDF'}
+                    </Button>
+                  </Box>
+                )}
               </CardContent>
             </Card>
           )}

@@ -42,15 +42,12 @@ export const getAgendaActions = (item, currentUser) => {
       break;
 
     case 'WING_APPROVED':
-      if (isRNAASJS) {
-        actions.push({ key: 'approve_rna', label: 'Approve for RNA', variant: 'contained', color: 'primary' });
-        actions.push({ key: 'return_rna', label: 'Return', variant: 'outlined', color: 'error' });
-      }
+      // Items no longer sit at WING_APPROVED — auto-transitioned to PENDING_RNA (MT-12).
+      // No actions needed; show view only (handled by fallback below).
       break;
 
     case 'PENDING_RNA':
       if (isRNAASJS) {
-        actions.push({ key: 'consolidate', label: 'Consolidate', variant: 'contained', color: 'primary' });
         actions.push({ key: 'return_rna', label: 'Return', variant: 'outlined', color: 'error' });
       }
       break;
@@ -80,6 +77,13 @@ export const getAgendaActions = (item, currentUser) => {
       break;
 
     case 'CHAIRMAN_DECIDED':
+      if (isChairmanPS || isWebAdmin) {
+        actions.push({ key: 'archive', label: 'Archive', variant: 'outlined', color: 'inherit' });
+      }
+      break;
+
+    case 'DEFERRED':
+    case 'UNAPPROVED':
       if (isChairmanPS || isWebAdmin) {
         actions.push({ key: 'archive', label: 'Archive', variant: 'outlined', color: 'inherit' });
       }

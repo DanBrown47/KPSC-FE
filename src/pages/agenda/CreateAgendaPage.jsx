@@ -13,8 +13,9 @@ import FormControlLabel from '@mui/material/FormControlLabel';
 import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
+import Alert from '@mui/material/Alert';
 import { useGetAgendaItemQuery, useCreateAgendaItemMutation, useUpdateAgendaItemMutation } from '../../store/api/agendaApi.js';
-import { useGetWingsQuery } from '../../store/api/wingsApi.js';
+import { useGetWingsQuery, useGetWingAgendaFormsQuery } from '../../store/api/wingsApi.js';
 import { useGetMeetingsQuery } from '../../store/api/meetingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { AutosaveIndicator } from '../../components/common/AutosaveIndicator.jsx';
@@ -53,7 +54,13 @@ export const CreateAgendaPage = () => {
   const { data: existingItem, isLoading: itemLoading } = useGetAgendaItemQuery(id, { skip: !id });
   const { data: wingsData } = useGetWingsQuery();
   const wings = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
-  const { data: meetingsData } = useGetMeetingsQuery({ status: 'SCHEDULED', limit: 50 });
+  // Fetch agenda forms filtered by selected wing
+  const { data: wingFormsData } = useGetWingAgendaFormsQuery(form.wing, { skip: !form.wing });
+  const wingForms = Array.isArray(wingFormsData?.results)
+    ? wingFormsData.results
+    : Array.isArray(wingFormsData) ? wingFormsData : [];
+  // Fetch all meetings (including FINALIZED) so users can create supplementary items
+  const { data: meetingsData } = useGetMeetingsQuery({ limit: 100 });
   const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
 
   const [createAgendaItem, { isLoading: creating }] = useCreateAgendaItemMutation();
@@ -82,6 +89,34 @@ export const CreateAgendaPage = () => {
     if (errors[field]) setErrors((p) => ({ ...p, [field]: '' }));
   };
 
+  const handleWingChange = (e) => {
+    const wingId = e.target.value;
+    // Reset agenda_form when wing changes — the available forms differ per wing
+    setForm((p) => ({ ...p, wing: wingId, agenda_form: '' }));
+    setIsDirty(true);
+    if (errors.wing) setErrors((p) => ({ ...p, wing: '' }));
+  };
+
+  // Derive selected meeting object to check its status
+  const selectedMeeting = meetings.find((m) => String(m.id) === String(form.meeting));
+  const selectedMeetingStatus = selectedMeeting?.status;
+
+  // Custom handler for meeting field — auto-sets is_supplementary when FINALIZED
+  const handleMeetingChange = (e) => {
+    const meetingId = e.target.value;
+    const mtg = meetings.find((m) => String(m.id) === String(meetingId));
+    setForm((p) => ({
+      ...p,
+      meeting: meetingId,
+      // Auto-check supplementary when a FINALIZED meeting is selected; clear when SCHEDULED
+      is_supplementary: mtg?.status === 'FINALIZED' ? true
+        : mtg?.status === 'SCHEDULED' ? false
+        : p.is_supplementary,
+    }));
+    setIsDirty(true);
+    if (errors.meeting) setErrors((p) => ({ ...p, meeting: '' }));
+  };
+
   const getFormData = () => form;
 
   const { saveStatus, lastSaved } = useAgendaAutosave({
@@ -98,6 +133,7 @@ export const CreateAgendaPage = () => {
       if (!form.topic.trim()) errs.topic = 'Topic is required';
       if (!form.wing) errs.wing = 'Wing is required';
       if (!form.meeting) errs.meeting = 'Meeting is required';
+      if (!form.agenda_form) errs.agenda_form = 'Agenda form is required';
     }
     if (step === 1) {
       if (!form.description.trim()) errs.description = 'Description is required';
@@ -206,22 +242,41 @@ export const CreateAgendaPage = () => {
                 fullWidth
                 label="Meeting"
                 value={form.meeting}
-                onChange={handleField('meeting')}
+                onChange={handleMeetingChange}
                 error={!!errors.meeting}
                 helperText={errors.meeting}
                 required
               >
                 <MenuItem value="">Select meeting...</MenuItem>
                 {meetings.map((m) => (
-                  <MenuItem key={m.id} value={m.id}>{m.title}</MenuItem>
+                  <MenuItem key={m.id} value={m.id} disabled={m.status === 'COMPLETED'}>
+                    {m.title}
+                    {m.status !== 'SCHEDULED' && (
+                      <Typography component="span" variant="caption" sx={{ ml: 1, color: m.status === 'FINALIZED' ? 'warning.main' : 'text.disabled' }}>
+                        [{m.status}]
+                      </Typography>
+                    )}
+                  </MenuItem>
                 ))}
               </TextField>
+
+              {/* Meeting status alerts */}
+              {selectedMeetingStatus === 'FINALIZED' && (
+                <Alert severity="info">
+                  This meeting is finalized. New agenda items will be created as <strong>supplementary</strong>.
+                </Alert>
+              )}
+              {selectedMeetingStatus === 'COMPLETED' && (
+                <Alert severity="error">
+                  This meeting is completed. No new agenda items can be added.
+                </Alert>
+              )}
               <TextField
                 select
                 fullWidth
                 label="Wing"
                 value={form.wing}
-                onChange={handleField('wing')}
+                onChange={handleWingChange}
                 error={!!errors.wing}
                 helperText={errors.wing}
                 required
@@ -230,6 +285,25 @@ export const CreateAgendaPage = () => {
                 {wings.map((w) => (
                   <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>
                 ))}
+              </TextField>
+              <TextField
+                select
+                fullWidth
+                label="Agenda Form"
+                value={form.agenda_form}
+                onChange={handleField('agenda_form')}
+                error={!!errors.agenda_form}
+                helperText={errors.agenda_form || (form.wing ? '' : 'Select a wing first')}
+                required
+                disabled={!form.wing}
+              >
+                <MenuItem value="">Select agenda form...</MenuItem>
+                {wingForms.map((wf) => {
+                  const af = wf.agenda_form || wf;
+                  return (
+                    <MenuItem key={af.id} value={af.id}>{af.name || af.code}</MenuItem>
+                  );
+                })}
               </TextField>
               <TextField
                 fullWidth
@@ -243,9 +317,14 @@ export const CreateAgendaPage = () => {
                   <Checkbox
                     checked={form.is_supplementary}
                     onChange={handleField('is_supplementary')}
+                    disabled={selectedMeetingStatus === 'FINALIZED'}
                   />
                 }
-                label="This is a supplementary agenda item"
+                label={
+                  selectedMeetingStatus === 'FINALIZED'
+                    ? 'Supplementary agenda item (required for finalized meetings)'
+                    : 'This is a supplementary agenda item'
+                }
               />
             </Box>
           )}
@@ -299,7 +378,11 @@ export const CreateAgendaPage = () => {
             </Button>
             <Box sx={{ display: 'flex', gap: 1 }}>
               {activeStep < STEPS.length - 1 ? (
-                <Button variant="contained" onClick={handleNext} disabled={creating}>
+                <Button
+                  variant="contained"
+                  onClick={handleNext}
+                  disabled={creating || (activeStep === 0 && selectedMeetingStatus === 'COMPLETED')}
+                >
                   {creating ? 'Saving...' : 'Save & Continue'}
                 </Button>
               ) : (

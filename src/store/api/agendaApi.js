@@ -66,6 +66,26 @@ export const agendaApi = createApi({
       }),
       invalidatesTags: ['AgendaItem'],
     }),
+    consolidateMeeting: builder.mutation({
+      query: (meetingId) => ({
+        url: 'agenda/consolidate_meeting/',
+        method: 'POST',
+        body: { meeting_id: meetingId },
+      }),
+      invalidatesTags: ['AgendaItem'],
+    }),
+    getApprovalDocument: builder.query({
+      query: (agendaItemId) => `agenda/${agendaItemId}/approval_document/`,
+      providesTags: (result, error, agendaItemId) => [{ type: 'AgendaItem', id: agendaItemId }],
+    }),
+    uploadApprovalDocument: builder.mutation({
+      query: ({ agendaItemId, formData }) => ({
+        url: `agenda/${agendaItemId}/approval_document/`,
+        method: 'POST',
+        body: formData,
+      }),
+      invalidatesTags: (result, error, { agendaItemId }) => [{ type: 'AgendaItem', id: agendaItemId }],
+    }),
     getAttachments: builder.query({
       query: (agendaItemId) => `agenda/${agendaItemId}/attachments/`,
       providesTags: (result, error, agendaItemId) => [{ type: 'Attachment', id: agendaItemId }],
@@ -106,6 +126,8 @@ export const agendaApi = createApi({
 });
 
 export const {
+  useGetApprovalDocumentQuery,
+  useUploadApprovalDocumentMutation,
   useGetAgendaItemsQuery,
   useGetAgendaItemQuery,
   useCreateAgendaItemMutation,
@@ -117,6 +139,7 @@ export const {
   useReturnFromRNAMutation,
   useConsolidateMutation,
   useBulkApproveRNAMutation,
+  useConsolidateMeetingMutation,
   useGetAttachmentsQuery,
   useUploadAttachmentMutation,
   useDeleteAttachmentMutation,

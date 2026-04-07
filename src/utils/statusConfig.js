@@ -65,6 +65,18 @@ export const STATUS_CONFIG = {
     bgColor: '#ECFDF5',
     description: 'Chairman has decided',
   },
+  DEFERRED: {
+    label: 'Deferred',
+    color: '#92400E',
+    bgColor: '#FFFBEB',
+    description: 'Item deferred by chairman',
+  },
+  UNAPPROVED: {
+    label: 'Unapproved',
+    color: '#991B1B',
+    bgColor: '#FEF2F2',
+    description: 'Item not approved by chairman',
+  },
   ARCHIVED: {
     label: 'Archived',
     color: '#374151',

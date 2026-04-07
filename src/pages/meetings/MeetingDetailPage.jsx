@@ -11,12 +11,14 @@ import LinearProgress from '@mui/material/LinearProgress';
 import GavelIcon from '@mui/icons-material/Gavel';
 import DownloadIcon from '@mui/icons-material/Download';
 import { format } from 'date-fns';
-import { useGetMeetingQuery } from '../../store/api/meetingsApi.js';
+import { useGetMeetingQuery, useFinalizeMeetingMutation } from '../../store/api/meetingsApi.js';
 import { useGetAgendaItemsQuery } from '../../store/api/agendaApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
 import { usePermissions } from '../../hooks/usePermissions.js';
 import { useReportGeneration } from '../../hooks/useReportGeneration.js';
+import { useDispatch } from 'react-redux';
+import { showToast } from '../../store/uiSlice.js';
 
 const InfoRow = ({ label, value }) => (
   <Box sx={{ display: 'flex', gap: 2, py: 1, borderBottom: '1px solid #F1F5F9' }}>
@@ -65,8 +67,22 @@ const ReportButton = ({ meetingId }) => {
 export const MeetingDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { isChairmanPS } = usePermissions();
+  const dispatch = useDispatch();
+  const { isChairmanPS, isRNAASJS, isChairman } = usePermissions();
   const { data: meeting, isLoading } = useGetMeetingQuery(id);
+  const [finalizeMeeting, { isLoading: finalizing }] = useFinalizeMeetingMutation();
+
+  const handleFinalize = async () => {
+    try {
+      await finalizeMeeting(id).unwrap();
+      dispatch(showToast({ message: 'Meeting finalized successfully', severity: 'success' }));
+    } catch {
+      dispatch(showToast({ message: 'Failed to finalize meeting', severity: 'error' }));
+    }
+  };
+
+  // RNA_ASJS is the primary finalizer; Chairman/ChairmanPS retain override
+  const canFinalize = isRNAASJS || isChairman || isChairmanPS;
   const { data: agendaData } = useGetAgendaItemsQuery({ meeting_id: id, limit: 100 });
   const agendaItems = Array.isArray(agendaData?.results) ? agendaData.results : Array.isArray(agendaData) ? agendaData : [];
 
@@ -84,7 +100,18 @@ export const MeetingDetailPage = () => {
         actions={
           <Box sx={{ display: 'flex', gap: 1 }}>
             <ReportButton meetingId={id} />
-            {isChairmanPS && meeting.status === 'SCHEDULED' && (
+            {canFinalize && meeting.status === 'SCHEDULED' && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<GavelIcon />}
+                onClick={handleFinalize}
+                disabled={finalizing}
+              >
+                {finalizing ? 'Finalizing…' : 'Finalize Meeting'}
+              </Button>
+            )}
+            {isChairmanPS && meeting.status === 'FINALIZED' && (
               <Button variant="contained" startIcon={<GavelIcon />} onClick={() => navigate(`/sitting/${id}`)}>
                 Open Sitting
               </Button>
