@@ -138,6 +138,7 @@ export const MeetingDetailPage = () => {
               <Typography variant="h5" gutterBottom>Meeting Details</Typography>
               <InfoRow label="Status" value={<StatusChip status={meeting.status} />} />
               <InfoRow label="Date" value={meeting.sitting_date ? format(new Date(meeting.sitting_date), 'EEEE, dd MMMM yyyy') : '—'} />
+              <InfoRow label="Time" value={meeting.sitting_date ? format(new Date(meeting.sitting_date), 'hh:mm a') : '—'} />
               <InfoRow label="Venue" value={meeting.venue} />
               <InfoRow label="Description" value={meeting.description} />
               <InfoRow label="Created" value={meeting.created_at ? format(new Date(meeting.created_at), 'dd MMM yyyy') : '—'} />

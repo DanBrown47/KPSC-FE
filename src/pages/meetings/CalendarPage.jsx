@@ -14,7 +14,7 @@ import TextField from '@mui/material/TextField';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddIcon from '@mui/icons-material/Add';
-import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek } from 'date-fns';
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isSameDay, startOfWeek, endOfWeek, isBefore, startOfDay } from 'date-fns';
 import { useGetMeetingsQuery, useCreateMeetingMutation } from '../../store/api/meetingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { usePermissions } from '../../hooks/usePermissions.js';
@@ -34,7 +34,7 @@ export const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [newMeeting, setNewMeeting] = useState({ title: '', venue: '', description: '' });
+  const [newMeeting, setNewMeeting] = useState({ title: '', venue: '', description: '', time: '09:00' });
 
   const { data: meetingsData } = useGetMeetingsQuery({
     month: format(currentDate, 'yyyy-MM'),
@@ -60,6 +60,7 @@ export const CalendarPage = () => {
   const handleDayClick = (day) => {
     if (!isChairmanPS) return;
     if (!isSameMonth(day, currentDate)) return;
+    if (isBefore(day, startOfDay(new Date()))) return;
     const dayMeetings = getMeetingsForDay(day);
     if (dayMeetings.length === 0) {
       setSelectedDate(day);
@@ -69,13 +70,17 @@ export const CalendarPage = () => {
 
   const handleCreate = async () => {
     try {
+      const [hours, minutes] = newMeeting.time.split(':').map(Number);
+      const datetime = new Date(selectedDate);
+      datetime.setHours(hours, minutes, 0, 0);
+      const { time: _time, ...meetingFields } = newMeeting;
       const meeting = await createMeeting({
-        ...newMeeting,
-        sitting_date: format(selectedDate, "yyyy-MM-dd'T'HH:mm:ssxxx"),
+        ...meetingFields,
+        sitting_date: format(datetime, "yyyy-MM-dd'T'HH:mm:ssxxx"),
       }).unwrap();
       dispatch(showToast({ message: 'Meeting scheduled successfully', severity: 'success' }));
       setCreateOpen(false);
-      setNewMeeting({ title: '', venue: '', description: '' });
+      setNewMeeting({ title: '', venue: '', description: '', time: '09:00' });
       navigate(`/meetings/${meeting.id}`);
     } catch {
       dispatch(showToast({ message: 'Failed to schedule meeting', severity: 'error' }));
@@ -115,6 +120,7 @@ export const CalendarPage = () => {
               const dayMeetings = getMeetingsForDay(day);
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isToday = isSameDay(day, new Date());
+              const isPastDay = isBefore(day, startOfDay(new Date()));
 
               return (
                 <Box
@@ -127,8 +133,8 @@ export const CalendarPage = () => {
                     p: 0.75,
                     bgcolor: isToday ? '#EFF6FF' : 'transparent',
                     opacity: isCurrentMonth ? 1 : 0.35,
-                    cursor: isChairmanPS && isCurrentMonth && dayMeetings.length === 0 ? 'pointer' : 'default',
-                    '&:hover': isChairmanPS && isCurrentMonth && dayMeetings.length === 0 ? { bgcolor: '#F8FAFC' } : {},
+                    cursor: isChairmanPS && isCurrentMonth && !isPastDay && dayMeetings.length === 0 ? 'pointer' : 'default',
+                    '&:hover': isChairmanPS && isCurrentMonth && !isPastDay && dayMeetings.length === 0 ? { bgcolor: '#F8FAFC' } : {},
                   }}
                 >
                   <Typography
@@ -173,6 +179,7 @@ export const CalendarPage = () => {
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
             <TextField fullWidth label="Meeting Title" value={newMeeting.title} onChange={(e) => setNewMeeting((p) => ({ ...p, title: e.target.value }))} required />
+            <TextField fullWidth label="Time" type="time" value={newMeeting.time} onChange={(e) => setNewMeeting((p) => ({ ...p, time: e.target.value }))} required InputLabelProps={{ shrink: true }} />
             <TextField fullWidth label="Venue" value={newMeeting.venue} onChange={(e) => setNewMeeting((p) => ({ ...p, venue: e.target.value }))} required />
             <TextField fullWidth label="Description" value={newMeeting.description} onChange={(e) => setNewMeeting((p) => ({ ...p, description: e.target.value }))} multiline rows={2} />
           </Box>
