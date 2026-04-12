@@ -240,6 +240,8 @@ const PermissionRolesTab = ({ userId, globalRole }) => {
   );
 };
 
+const PA_ROLES = { MEMBER_PA: 'MEMBER', SECRETARY_PA: 'SECRETARY' };
+
 const initForm = (u) => u ? {
   first_name: u.user?.first_name || '',
   last_name: u.user?.last_name || '',
@@ -249,7 +251,8 @@ const initForm = (u) => u ? {
   phone: u.phone || '',
   designation: u.designation || '',
   password: '',
-} : { username: '', email: '', first_name: '', last_name: '', global_role: 'WING_AS', password: '', phone: '', designation: '' };
+  corresponding_user: u.corresponding_user_id || '',
+} : { username: '', email: '', first_name: '', last_name: '', global_role: 'WING_AS', password: '', phone: '', designation: '', corresponding_user: '' };
 
 const UserDrawer = ({ open, user, onClose, onSave }) => {
   const [tab, setTab] = useState(0);
@@ -266,6 +269,15 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
 
   const isNew = !user;
   const isPredefined = !isNew && PREDEFINED_ROLES.has(user?.global_role);
+
+  const correspondingRole = PA_ROLES[form.global_role];
+  const { data: correspondingUsersData } = useGetUsersQuery(
+    correspondingRole ? { global_role: correspondingRole, is_active: 'true', page_size: 200 } : undefined,
+    { skip: !correspondingRole }
+  );
+  const correspondingUsers = Array.isArray(correspondingUsersData?.results)
+    ? correspondingUsersData.results
+    : Array.isArray(correspondingUsersData) ? correspondingUsersData : [];
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: 480 } }}>
@@ -284,7 +296,9 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
             <TextField label="Last Name" value={form.last_name} onChange={handleField('last_name')} required />
             <TextField label="Username" value={form.username} onChange={handleField('username')} required />
             <TextField label="Email" type="email" value={form.email} onChange={handleField('email')} required />
-            <TextField select label="Role" value={form.global_role} onChange={handleField('global_role')} required>
+            <TextField select label="Role" value={form.global_role} onChange={(e) => {
+              setForm((p) => ({ ...p, global_role: e.target.value, corresponding_user: '' }));
+            }} required>
               {ROLES.map((r) =>
                 r.divider
                   ? <ListSubheader key={r.label}>{r.label}</ListSubheader>
@@ -293,6 +307,22 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
                     : <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
               )}
             </TextField>
+            {correspondingRole && (
+              <TextField
+                select
+                label={`Corresponding ${correspondingRole === 'MEMBER' ? 'Member' : 'Secretary'}`}
+                value={form.corresponding_user}
+                onChange={handleField('corresponding_user')}
+                required
+              >
+                <MenuItem value=""><em>None</em></MenuItem>
+                {correspondingUsers.map((u) => (
+                  <MenuItem key={u.id} value={u.id}>
+                    {u.full_name || `${u.user?.first_name || ''} ${u.user?.last_name || ''}`.trim() || u.username}
+                  </MenuItem>
+                ))}
+              </TextField>
+            )}
             <TextField label="Phone" value={form.phone} onChange={handleField('phone')} />
             <TextField label="Designation" value={form.designation} onChange={handleField('designation')} />
             {isNew && (
@@ -358,11 +388,13 @@ export const UserManagementPage = () => {
 
   const handleSave = async (form) => {
     try {
+      const payload = { ...form };
+      if (!payload.corresponding_user) payload.corresponding_user = null;
       if (editUser) {
-        await updateUser({ id: editUser.id, ...form }).unwrap();
+        await updateUser({ id: editUser.id, ...payload }).unwrap();
         dispatch(showToast({ message: 'User updated', severity: 'success' }));
       } else {
-        await createUser(form).unwrap();
+        await createUser(payload).unwrap();
         dispatch(showToast({ message: 'User created', severity: 'success' }));
       }
       setDrawerOpen(false);
