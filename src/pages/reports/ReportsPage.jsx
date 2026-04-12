@@ -11,11 +11,14 @@ import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import DownloadIcon from '@mui/icons-material/Download';
 import BarChartIcon from '@mui/icons-material/BarChart';
+import AddIcon from '@mui/icons-material/Add';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { format } from 'date-fns';
+import { useNavigate } from 'react-router-dom';
 import { useGetMeetingsQuery } from '../../store/api/meetingsApi.js';
 import { useGenerateReportMutation, useGetReportsQuery, useGetReportStatusQuery } from '../../store/api/reportsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
+import { usePermissions } from '../../hooks/usePermissions.js';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 
@@ -75,6 +78,10 @@ const ReportStatusRow = ({ report }) => {
 
 export const ReportsPage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const { isWingMember, isWingASJS } = usePermissions();
+  const isWingUser = isWingMember || isWingASJS;
+
   const [meetingId, setMeetingId] = useState('');
   const [reportType, setReportType] = useState('AGENDA_SUMMARY');
 
@@ -103,47 +110,84 @@ export const ReportsPage = () => {
 
       <Card sx={{ maxWidth: 600, mb: 3 }}>
         <CardContent sx={{ p: 3 }}>
-          <Typography variant="h5" gutterBottom>Generate Report</Typography>
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
-            <TextField
-              select
-              label="Meeting"
-              value={meetingId}
-              onChange={(e) => setMeetingId(e.target.value)}
-              fullWidth
-              required
-            >
-              <MenuItem value="">Select a meeting...</MenuItem>
-              {meetings.map((m) => (
-                <MenuItem key={m.id} value={m.id}>
-                  {m.title}
-                  {m.sitting_date ? ` — ${format(new Date(m.sitting_date), 'dd MMM yyyy')}` : ''}
-                </MenuItem>
-              ))}
-            </TextField>
-            <TextField
-              select
-              label="Report Type"
-              value={reportType}
-              onChange={(e) => setReportType(e.target.value)}
-              fullWidth
-              required
-            >
-              {REPORT_TYPES.map((r) => (
-                <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
-              ))}
-            </TextField>
-            <Button
-              variant="contained"
-              startIcon={generating ? <CircularProgress size={16} color="inherit" /> : <BarChartIcon />}
-              onClick={handleGenerate}
-              disabled={!meetingId || !reportType || generating}
-              fullWidth
-              size="large"
-            >
-              {generating ? 'Queuing...' : 'Generate Report'}
-            </Button>
-          </Box>
+          {isWingUser ? (
+            <>
+              <Typography variant="h5" gutterBottom>Create Agenda Item</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                Select a meeting to create an agenda item for, or go directly to the form.
+              </Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <TextField
+                  select
+                  label="Meeting (optional)"
+                  value={meetingId}
+                  onChange={(e) => setMeetingId(e.target.value)}
+                  fullWidth
+                >
+                  <MenuItem value="">Select a meeting...</MenuItem>
+                  {meetings.map((m) => (
+                    <MenuItem key={m.id} value={m.id} disabled={m.status === 'COMPLETED'}>
+                      {m.title}
+                      {m.sitting_date ? ` — ${format(new Date(m.sitting_date), 'dd MMM yyyy')}` : ''}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <Button
+                  variant="contained"
+                  startIcon={<AddIcon />}
+                  onClick={() => navigate(meetingId ? `/agenda/create?meeting=${meetingId}` : '/agenda/create')}
+                  fullWidth
+                  size="large"
+                >
+                  Create Agenda Item
+                </Button>
+              </Box>
+            </>
+          ) : (
+            <>
+              <Typography variant="h5" gutterBottom>Generate Report</Typography>
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
+                <TextField
+                  select
+                  label="Meeting"
+                  value={meetingId}
+                  onChange={(e) => setMeetingId(e.target.value)}
+                  fullWidth
+                  required
+                >
+                  <MenuItem value="">Select a meeting...</MenuItem>
+                  {meetings.map((m) => (
+                    <MenuItem key={m.id} value={m.id}>
+                      {m.title}
+                      {m.sitting_date ? ` — ${format(new Date(m.sitting_date), 'dd MMM yyyy')}` : ''}
+                    </MenuItem>
+                  ))}
+                </TextField>
+                <TextField
+                  select
+                  label="Report Type"
+                  value={reportType}
+                  onChange={(e) => setReportType(e.target.value)}
+                  fullWidth
+                  required
+                >
+                  {REPORT_TYPES.map((r) => (
+                    <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
+                  ))}
+                </TextField>
+                <Button
+                  variant="contained"
+                  startIcon={generating ? <CircularProgress size={16} color="inherit" /> : <BarChartIcon />}
+                  onClick={handleGenerate}
+                  disabled={!meetingId || !reportType || generating}
+                  fullWidth
+                  size="large"
+                >
+                  {generating ? 'Queuing...' : 'Generate Report'}
+                </Button>
+              </Box>
+            </>
+          )}
         </CardContent>
       </Card>
 

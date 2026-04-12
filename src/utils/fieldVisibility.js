@@ -15,7 +15,7 @@ export const getVisibleFields = (item, currentUser) => {
   const fields = [FIELD_GROUPS.BASE];
 
   // Wing content visible to wing roles + RNA (own-wing only) + above
-  const canSeeWingContent = ['WING_MEMBER', 'WING_ASJS', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'WEB_ADMIN'].includes(global_role)
+  const canSeeWingContent = ['WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'WEB_ADMIN'].includes(global_role)
     || (global_role === 'RNA_ASJS' && (() => {
       // RNA_ASJS: only show wing content for items from their own wing(s)
       const userWingIds = (currentUser.wing_roles || [])

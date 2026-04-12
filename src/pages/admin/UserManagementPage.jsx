@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Box from '@mui/material/Box';
 import Button from '@mui/material/Button';
 import Drawer from '@mui/material/Drawer';
@@ -10,12 +10,18 @@ import MenuItem from '@mui/material/MenuItem';
 import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import IconButton from '@mui/material/IconButton';
+import Checkbox from '@mui/material/Checkbox';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import InputAdornment from '@mui/material/InputAdornment';
 import { DataGrid } from '@mui/x-data-grid';
+import ListSubheader from '@mui/material/ListSubheader';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import BlockIcon from '@mui/icons-material/Block';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
+import SearchIcon from '@mui/icons-material/Search';
+import ClearIcon from '@mui/icons-material/Clear';
 import { useGetUsersQuery, useCreateUserMutation, useUpdateUserMutation, useDeactivateUserMutation, useActivateUserMutation, useGetWingRolesQuery, useAddWingRoleMutation, useRemoveWingRoleMutation, useGetPermissionRolesQuery, useAddPermissionRoleMutation, useRemovePermissionRoleMutation } from '../../store/api/usersApi.js';
 import { useGetWingsQuery } from '../../store/api/wingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
@@ -23,7 +29,27 @@ import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 
-const ROLES = ['WEB_ADMIN', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'RNA_ASJS', 'WING_ASJS', 'WING_MEMBER', 'SECRETARY', 'SECRETARY_PA', 'CA', 'RA_WING'];
+const PREDEFINED_ROLES = new Set([
+  'CHAIRMAN', 'CHAIRMAN_PS', 'SECRETARY', 'MEMBER', 'MEMBER_PA', 'SECRETARY_PA',
+]);
+
+const ROLES = [
+  { divider: true, label: 'Commission Roles' },
+  { value: 'CHAIRMAN',     label: 'Chairman' },
+  { value: 'CHAIRMAN_PS',  label: 'Chairman PS' },
+  { value: 'SECRETARY',    label: 'Secretary' },
+  { value: 'MEMBER',       label: 'Members' },
+  { value: 'MEMBER_PA',    label: 'PA (Member)' },
+  { value: 'SECRETARY_PA', label: 'PA (Secretary)' },
+  { divider: true, label: 'Wing Roles' },
+  { value: 'WING_AS',      label: 'AS' },
+  { value: 'WING_JS',      label: 'JS' },
+  { value: 'CA',           label: 'CA' },
+  { divider: false },
+  { value: 'WEB_ADMIN',    label: 'Web Admin' },
+];
+
+const ROLE_LABEL = Object.fromEntries(ROLES.filter((r) => r.value).map((r) => [r.value, r.label]));
 
 const WING_ROLE_OPTIONS = [
   { value: 'AS_JS', label: 'AS/JS' },
@@ -32,14 +58,17 @@ const WING_ROLE_OPTIONS = [
 ];
 
 const PERMISSION_CHOICES = [
-  { value: 'meeting_convener', label: 'Meeting Convener' },
-  { value: 'agenda_signoff_authority', label: 'Agenda Sign-off Authority' },
-  { value: 'committee_agenda_approver', label: 'Committee Agenda Approver' },
-  { value: 'wing_agenda_approver', label: 'Wing Agenda Approver' },
-  { value: 'pre_meeting_agenda_approver', label: 'Pre-Meeting Agenda Approver' },
-  { value: 'wing_user', label: 'Wing User' },
-  { value: 'user_manager', label: 'User Manager' },
-  { value: 'config_manager', label: 'Config Manager' },
+  { value: 'agenda_item_create',  label: 'Create Agenda Item' },
+  { value: 'agenda_item_view',    label: 'View Agenda Item' },
+  { value: 'agenda_item_edit',    label: 'Edit Agenda Item' },
+  { value: 'agenda_item_delete',  label: 'Delete Agenda Item' },
+  { value: 'approve_agenda_item', label: 'Approve Agenda Item' },
+  { value: 'final_agenda_view',   label: 'View Final Agenda' },
+];
+
+const RA_ONLY_PERMISSION_CHOICES = [
+  { value: 'finalize_other_wings_agenda',            label: 'Finalize Other Wings Agenda' },
+  { value: 'add_subsequent_item_to_approved_agenda', label: 'Add Subsequent Item to Approved Agenda' },
 ];
 
 const getInitials = (user) => {
@@ -48,10 +77,16 @@ const getInitials = (user) => {
   return (f + l).toUpperCase() || user.username?.[0]?.toUpperCase() || 'U';
 };
 
-const WingAssignmentsTab = ({ userId }) => {
+const deriveWingRole = (globalRole) => {
+  if (['WING_JS', 'WING_AS'].includes(globalRole)) return 'AS_JS';
+  if (globalRole === 'CA') return 'CA';
+  return 'WING_MEMBER';
+};
+
+const WingAssignmentsTab = ({ userId, globalRole }) => {
   const dispatch = useDispatch();
   const [newWing, setNewWing] = useState('');
-  const [newRole, setNewRole] = useState('WING_MEMBER');
+  const [newRole, setNewRole] = useState(() => deriveWingRole(globalRole));
   const { data: wingRolesData } = useGetWingRolesQuery(userId);
   const { data: wingsData } = useGetWingsQuery({ is_active: true, page_size: 200 });
   const [addWingRole] = useAddWingRoleMutation();
@@ -66,31 +101,31 @@ const WingAssignmentsTab = ({ userId }) => {
     try {
       await addWingRole({ userId, wing: newWing, wing_role: newRole, is_active: true }).unwrap();
       setNewWing('');
-      dispatch(showToast({ message: 'Wing role added', severity: 'success' }));
+      dispatch(showToast({ message: 'Wing assigned', severity: 'success' }));
     } catch {
-      dispatch(showToast({ message: 'Failed to add wing role', severity: 'error' }));
+      dispatch(showToast({ message: 'Failed to assign wing', severity: 'error' }));
     }
   };
 
   const handleRemove = async (roleId) => {
     try {
       await removeWingRole(roleId).unwrap();
-      dispatch(showToast({ message: 'Wing role removed', severity: 'info' }));
+      dispatch(showToast({ message: 'Wing removed', severity: 'info' }));
     } catch {
-      dispatch(showToast({ message: 'Failed to remove wing role', severity: 'error' }));
+      dispatch(showToast({ message: 'Failed to remove wing', severity: 'error' }));
     }
   };
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
       <Box sx={{ display: 'flex', gap: 1, alignItems: 'flex-start' }}>
-        <TextField select label="Wing" value={newWing} onChange={(e) => setNewWing(e.target.value)} size="small" sx={{ flex: 2 }} disabled={availableWings.length === 0}>
+        <TextField select label="Wing" value={newWing} onChange={(e) => setNewWing(e.target.value)} size="small" sx={{ flex: 1 }} disabled={availableWings.length === 0}>
           {availableWings.length === 0
             ? <MenuItem value="" disabled>All wings assigned</MenuItem>
             : availableWings.map((w) => <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>)
           }
         </TextField>
-        <TextField select label="Role" value={newRole} onChange={(e) => setNewRole(e.target.value)} size="small" sx={{ flex: 1 }}>
+        <TextField select label="Role" value={newRole} onChange={(e) => setNewRole(e.target.value)} size="small" sx={{ width: 130 }}>
           {WING_ROLE_OPTIONS.map((r) => <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>)}
         </TextField>
         <Button variant="contained" size="small" onClick={handleAdd} disabled={!newWing || availableWings.length === 0} sx={{ mt: 0.5 }}>Add</Button>
@@ -102,7 +137,9 @@ const WingAssignmentsTab = ({ userId }) => {
           <Box key={wr.id} sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1.5, border: '1px solid #E2E8F0', borderRadius: 1 }}>
             <Box sx={{ flex: 1 }}>
               <Typography variant="body2" fontWeight={600}>{wr.wing_name}</Typography>
-              <Typography variant="caption" color="text.secondary">{wr.wing_role}</Typography>
+              <Typography variant="caption" color="text.secondary">
+                {WING_ROLE_OPTIONS.find(r => r.value === wr.wing_role)?.label || wr.wing_role}
+              </Typography>
             </Box>
             <Chip label={wr.is_active ? 'Active' : 'Inactive'} size="small" sx={{ bgcolor: wr.is_active ? '#ECFDF5' : '#F3F4F6', color: wr.is_active ? '#059669' : '#6B7280' }} />
             <IconButton size="small" color="error" onClick={() => handleRemove(wr.id)}>
@@ -115,28 +152,80 @@ const WingAssignmentsTab = ({ userId }) => {
   );
 };
 
-const PermissionRolesTab = ({ userId }) => {
+const WingPermissionSection = ({ wingRole }) => {
   const dispatch = useDispatch();
-  const [selectedWingRoleId, setSelectedWingRoleId] = useState('');
-  const [newPerm, setNewPerm] = useState('');
-  const { data: wingRoles = [] } = useGetWingRolesQuery(userId);
-  const { data: permRoles = [] } = useGetPermissionRolesQuery(selectedWingRoleId, { skip: !selectedWingRoleId });
+  const { data: permRolesData = [] } = useGetPermissionRolesQuery(wingRole.id);
   const [addPermRole] = useAddPermissionRoleMutation();
   const [removePermRole] = useRemovePermissionRoleMutation();
 
-  const existing = permRoles.map((p) => p.permission_role);
-  const available = PERMISSION_CHOICES.filter((p) => !existing.includes(p.value));
+  const permRoles = Array.isArray(permRolesData?.results) ? permRolesData.results : Array.isArray(permRolesData) ? permRolesData : [];
+  const enabledPerms = new Map(permRoles.map((p) => [p.permission_role, p.id]));
 
-  const handleAdd = async () => {
-    if (!selectedWingRoleId || !newPerm) return;
+  const handleToggle = async (value, checked) => {
     try {
-      await addPermRole({ user_wing_role: selectedWingRoleId, permission_role: newPerm }).unwrap();
-      setNewPerm('');
-      dispatch(showToast({ message: 'Permission role added', severity: 'success' }));
+      if (checked) {
+        await addPermRole({ user_wing_role: wingRole.id, permission_role: value }).unwrap();
+        dispatch(showToast({ message: 'Permission added', severity: 'success' }));
+      } else {
+        const permId = enabledPerms.get(value);
+        if (permId) {
+          await removePermRole(permId).unwrap();
+          dispatch(showToast({ message: 'Permission removed', severity: 'info' }));
+        }
+      }
     } catch {
-      dispatch(showToast({ message: 'Failed to add permission role', severity: 'error' }));
+      dispatch(showToast({ message: 'Failed to update permission', severity: 'error' }));
     }
   };
+
+  const visiblePerms = wingRole.wing_code === 'RA'
+    ? [...PERMISSION_CHOICES, ...RA_ONLY_PERMISSION_CHOICES]
+    : PERMISSION_CHOICES;
+
+  return (
+    <Box sx={{ border: '1px solid #E2E8F0', borderRadius: 1, p: 2 }}>
+      <Typography variant="subtitle2" sx={{ mb: 1 }}>{wingRole.wing_name}</Typography>
+      <Box sx={{ display: 'flex', flexDirection: 'column' }}>
+        {visiblePerms.map((p) => (
+          <FormControlLabel
+            key={p.value}
+            control={
+              <Checkbox
+                size="small"
+                checked={enabledPerms.has(p.value)}
+                onChange={(e) => handleToggle(p.value, e.target.checked)}
+              />
+            }
+            label={<Typography variant="body2">{p.label}</Typography>}
+          />
+        ))}
+      </Box>
+    </Box>
+  );
+};
+
+const PredefinedRoleInfoPanel = ({ globalRole }) => (
+  <Box sx={{
+    display: 'flex', flexDirection: 'column', alignItems: 'center',
+    justifyContent: 'center', gap: 1.5, py: 4, px: 2, textAlign: 'center',
+    bgcolor: '#F8FAFC', borderRadius: 1, border: '1px solid #E2E8F0',
+  }}>
+    <Typography variant="subtitle2" color="text.primary">Predefined Permissions</Typography>
+    <Typography variant="body2" color="text.secondary">
+      The <strong>{ROLE_LABEL[globalRole] || globalRole}</strong> role has
+      fixed, system-defined permissions. No wing assignment or per-wing
+      configuration is required.
+    </Typography>
+  </Box>
+);
+
+const PermissionRolesTab = ({ userId, globalRole }) => {
+  const { data: wingRolesData } = useGetWingRolesQuery(userId);
+  const wingRoles = Array.isArray(wingRolesData?.results) ? wingRolesData.results : Array.isArray(wingRolesData) ? wingRolesData : [];
+
+  if (PREDEFINED_ROLES.has(globalRole)) {
+    return <PredefinedRoleInfoPanel globalRole={globalRole} />;
+  }
 
   if (wingRoles.length === 0) {
     return <Typography variant="body2" color="text.secondary">Assign wing roles on the previous tab first.</Typography>;
@@ -144,63 +233,39 @@ const PermissionRolesTab = ({ userId }) => {
 
   return (
     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-      <TextField
-        select
-        label="Wing Role"
-        value={selectedWingRoleId}
-        onChange={(e) => { setSelectedWingRoleId(e.target.value); setNewPerm(''); }}
-        size="small"
-        fullWidth
-      >
-        {wingRoles.map((wr) => (
-          <MenuItem key={wr.id} value={wr.id}>{wr.wing_name} — {wr.wing_role}</MenuItem>
-        ))}
-      </TextField>
-      {selectedWingRoleId && (
-        <>
-          <Box sx={{ display: 'flex', gap: 1 }}>
-            <TextField
-              select
-              label="Permission"
-              value={newPerm}
-              onChange={(e) => setNewPerm(e.target.value)}
-              size="small"
-              sx={{ flex: 1 }}
-              disabled={available.length === 0}
-            >
-              {available.map((p) => <MenuItem key={p.value} value={p.value}>{p.label}</MenuItem>)}
-            </TextField>
-            <Button variant="contained" size="small" onClick={handleAdd} disabled={!newPerm} sx={{ mt: 0.5 }}>Add</Button>
-          </Box>
-          {permRoles.length === 0 ? (
-            <Typography variant="body2" color="text.secondary">No permission roles assigned to this wing role.</Typography>
-          ) : (
-            permRoles.map((pr) => (
-              <Box key={pr.id} sx={{ display: 'flex', alignItems: 'center', p: 1.5, border: '1px solid #E2E8F0', borderRadius: 1 }}>
-                <Typography variant="body2" sx={{ flex: 1 }}>
-                  {PERMISSION_CHOICES.find((p) => p.value === pr.permission_role)?.label || pr.permission_role}
-                </Typography>
-                <IconButton size="small" color="error" onClick={() => removePermRole(pr.id)}>
-                  <DeleteIcon fontSize="small" />
-                </IconButton>
-              </Box>
-            ))
-          )}
-        </>
-      )}
+      {wingRoles.map((wr) => (
+        <WingPermissionSection key={wr.id} wingRole={wr} />
+      ))}
     </Box>
   );
 };
 
+const initForm = (u) => u ? {
+  first_name: u.user?.first_name || '',
+  last_name: u.user?.last_name || '',
+  username: u.username || u.user?.username || '',
+  email: u.email || u.user?.email || '',
+  global_role: u.global_role || 'WING_AS',
+  phone: u.phone || '',
+  designation: u.designation || '',
+  password: '',
+} : { username: '', email: '', first_name: '', last_name: '', global_role: 'WING_AS', password: '', phone: '', designation: '' };
+
 const UserDrawer = ({ open, user, onClose, onSave }) => {
   const [tab, setTab] = useState(0);
-  const [form, setForm] = useState(user || {
-    username: '', email: '', first_name: '', last_name: '', global_role: 'WING_MEMBER', password: '',
-  });
+  const [form, setForm] = useState(initForm(user));
+
+  useEffect(() => {
+    if (open) {
+      setForm(initForm(user));
+      setTab(0);
+    }
+  }, [user, open]);
 
   const handleField = (field) => (e) => setForm((p) => ({ ...p, [field]: e.target.value }));
 
   const isNew = !user;
+  const isPredefined = !isNew && PREDEFINED_ROLES.has(user?.global_role);
 
   return (
     <Drawer anchor="right" open={open} onClose={onClose} PaperProps={{ sx: { width: 480 } }}>
@@ -209,8 +274,8 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
         {!isNew && (
           <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ mb: 2, borderBottom: '1px solid #E2E8F0' }}>
             <Tab label="Profile" />
-            <Tab label="Wing Assignments" />
-            <Tab label="Permission Roles" />
+            {!isPredefined && <Tab label="Wing Assignments" />}
+            {!isPredefined && <Tab label="Permission Roles" />}
           </Tabs>
         )}
         {(isNew || tab === 0) && (
@@ -220,23 +285,29 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
             <TextField label="Username" value={form.username} onChange={handleField('username')} required />
             <TextField label="Email" type="email" value={form.email} onChange={handleField('email')} required />
             <TextField select label="Role" value={form.global_role} onChange={handleField('global_role')} required>
-              {ROLES.map((r) => (
-                <MenuItem key={r} value={r}>{r.replace(/_/g, ' ')}</MenuItem>
-              ))}
+              {ROLES.map((r) =>
+                r.divider
+                  ? <ListSubheader key={r.label}>{r.label}</ListSubheader>
+                  : r.value == null
+                    ? null
+                    : <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
+              )}
             </TextField>
+            <TextField label="Phone" value={form.phone} onChange={handleField('phone')} />
+            <TextField label="Designation" value={form.designation} onChange={handleField('designation')} />
             {isNew && (
               <TextField label="Password" type="password" value={form.password} onChange={handleField('password')} required />
             )}
           </Box>
         )}
-        {!isNew && tab === 1 && (
+        {!isNew && !isPredefined && tab === 1 && (
           <Box sx={{ flex: 1, overflow: 'auto' }}>
-            <WingAssignmentsTab userId={user.id} />
+            <WingAssignmentsTab userId={user.id} globalRole={user.global_role} />
           </Box>
         )}
-        {!isNew && tab === 2 && (
+        {!isNew && !isPredefined && tab === 2 && (
           <Box sx={{ flex: 1, overflow: 'auto' }}>
-            <PermissionRolesTab userId={user.id} />
+            <PermissionRolesTab userId={user.id} globalRole={user.global_role} />
           </Box>
         )}
         <Box sx={{ display: 'flex', gap: 1, pt: 2, mt: 'auto', borderTop: '1px solid #E2E8F0' }}>
@@ -256,11 +327,27 @@ export const UserManagementPage = () => {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editUser, setEditUser] = useState(null);
   const [deactivateDialog, setDeactivateDialog] = useState({ open: false, user: null });
+  const [filters, setFilters] = useState({ search: '', global_role: '', is_active: '' });
 
-  const { data, isLoading } = useGetUsersQuery({
+  const handleFilterChange = useCallback((field) => (e) => {
+    setFilters((prev) => ({ ...prev, [field]: e.target.value }));
+    setPaginationModel((prev) => ({ ...prev, page: 0 }));
+  }, []);
+
+  const handleClearSearch = useCallback(() => {
+    setFilters((prev) => ({ ...prev, search: '' }));
+    setPaginationModel((prev) => ({ ...prev, page: 0 }));
+  }, []);
+
+  const queryParams = {
     page: paginationModel.page + 1,
     page_size: paginationModel.pageSize,
-  });
+    ...(filters.search && { search: filters.search }),
+    ...(filters.global_role && { global_role: filters.global_role }),
+    ...(filters.is_active !== '' && { is_active: filters.is_active }),
+  };
+
+  const { data, isLoading } = useGetUsersQuery(queryParams);
   const [createUser] = useCreateUserMutation();
   const [updateUser] = useUpdateUserMutation();
   const [deactivateUser] = useDeactivateUserMutation();
@@ -326,7 +413,7 @@ export const UserManagementPage = () => {
       headerName: 'Role',
       width: 160,
       renderCell: ({ value }) => (
-        <Chip label={value?.replace(/_/g, ' ') || '—'} size="small" variant="outlined" />
+        <Chip label={ROLE_LABEL[value] || value?.replace(/_/g, ' ') || '—'} size="small" variant="outlined" />
       ),
     },
     {
@@ -413,6 +500,52 @@ export const UserManagementPage = () => {
           </Button>
         }
       />
+      <Box sx={{ display: 'flex', gap: 2, mb: 2, flexWrap: 'wrap' }}>
+        <TextField
+          placeholder="Search name, username, email…"
+          value={filters.search}
+          onChange={handleFilterChange('search')}
+          size="small"
+          sx={{ minWidth: 260, flex: 1 }}
+          InputProps={{
+            startAdornment: <InputAdornment position="start"><SearchIcon fontSize="small" /></InputAdornment>,
+            endAdornment: filters.search ? (
+              <InputAdornment position="end">
+                <IconButton size="small" onClick={handleClearSearch}><ClearIcon fontSize="small" /></IconButton>
+              </InputAdornment>
+            ) : null,
+          }}
+        />
+        <TextField
+          select
+          label="Role"
+          value={filters.global_role}
+          onChange={handleFilterChange('global_role')}
+          size="small"
+          sx={{ minWidth: 180 }}
+        >
+          <MenuItem value="">All Roles</MenuItem>
+          {ROLES.map((r) =>
+            r.divider
+              ? <ListSubheader key={r.label}>{r.label}</ListSubheader>
+              : r.value == null
+                ? null
+                : <MenuItem key={r.value} value={r.value}>{r.label}</MenuItem>
+          )}
+        </TextField>
+        <TextField
+          select
+          label="Status"
+          value={filters.is_active}
+          onChange={handleFilterChange('is_active')}
+          size="small"
+          sx={{ minWidth: 130 }}
+        >
+          <MenuItem value="">All</MenuItem>
+          <MenuItem value="true">Active</MenuItem>
+          <MenuItem value="false">Inactive</MenuItem>
+        </TextField>
+      </Box>
       <DataGrid
         rows={rows}
         columns={columns}

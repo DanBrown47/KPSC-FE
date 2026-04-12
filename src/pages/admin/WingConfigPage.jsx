@@ -16,6 +16,7 @@ import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import { DataGrid } from '@mui/x-data-grid';
 import AddIcon from '@mui/icons-material/Add';
+import DeleteIcon from '@mui/icons-material/Delete';
 import DragIndicatorIcon from '@mui/icons-material/DragIndicator';
 import EditIcon from '@mui/icons-material/Edit';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
@@ -24,10 +25,12 @@ import {
   useUpdateWingPriorityMutation,
   useCreateWingMutation,
   useUpdateWingMutation,
+  useDeleteWingMutation,
   useGetAgendaFormsQuery,
   useUpdateWingAgendaFormsMutation,
 } from '../../store/api/wingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 
@@ -270,10 +273,12 @@ export const WingConfigPage = () => {
   const { data: agendaFormsData, isLoading: formsLoading } = useGetAgendaFormsQuery();
   const [updatePriority, { isLoading: saving }] = useUpdateWingPriorityMutation();
 
+  const [deleteWing] = useDeleteWingMutation();
   const [wings, setWings] = useState([]);
   const [isDirty, setIsDirty] = useState(false);
   const [drawerWing, setDrawerWing] = useState(null);
   const [createOpen, setCreateOpen] = useState(false);
+  const [deleteDialog, setDeleteDialog] = useState({ open: false, wing: null });
 
   const agendaForms = Array.isArray(agendaFormsData?.results) ? agendaFormsData.results : Array.isArray(agendaFormsData) ? agendaFormsData : [];
 
@@ -303,6 +308,17 @@ export const WingConfigPage = () => {
       setIsDirty(false);
     } catch {
       dispatch(showToast({ message: 'Failed to save wing order', severity: 'error' }));
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    const wing = deleteDialog.wing;
+    setDeleteDialog({ open: false, wing: null });
+    try {
+      await deleteWing(wing.id).unwrap();
+      dispatch(showToast({ message: `Wing "${wing.name}" deleted`, severity: 'success' }));
+    } catch {
+      dispatch(showToast({ message: `Failed to delete wing "${wing.name}"`, severity: 'error' }));
     }
   };
 
@@ -363,12 +379,17 @@ export const WingConfigPage = () => {
     {
       field: 'actions',
       headerName: '',
-      width: 64,
+      width: 96,
       sortable: false,
       renderCell: ({ row }) => (
-        <IconButton size="small" onClick={() => setDrawerWing(row)}>
-          <EditIcon fontSize="small" />
-        </IconButton>
+        <Box sx={{ display: 'flex', gap: 0.5 }}>
+          <IconButton size="small" onClick={() => setDrawerWing(row)}>
+            <EditIcon fontSize="small" />
+          </IconButton>
+          <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, wing: row })}>
+            <DeleteIcon fontSize="small" />
+          </IconButton>
+        </Box>
       ),
     },
   ];
@@ -440,6 +461,9 @@ export const WingConfigPage = () => {
                           <Typography variant="caption" color="text.secondary">
                             Priority {index + 1}
                           </Typography>
+                          <IconButton size="small" color="error" onClick={() => setDeleteDialog({ open: true, wing })}>
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
                         </CardContent>
                       </Card>
                     )}
@@ -484,6 +508,16 @@ export const WingConfigPage = () => {
         wing={drawerWing}
         agendaForms={agendaForms}
         onClose={() => setDrawerWing(null)}
+      />
+
+      <ConfirmDialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, wing: null })}
+        onConfirm={handleDeleteConfirm}
+        title="Delete Wing"
+        message={`Are you sure you want to delete the wing "${deleteDialog.wing?.name}"? This action cannot be undone.`}
+        variant="destructive"
+        confirmLabel="Delete"
       />
     </Box>
   );

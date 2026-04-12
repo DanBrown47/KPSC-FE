@@ -10,7 +10,7 @@ export const getAgendaActions = (item, currentUser) => {
   const actions = [];
 
   const isWingMember = global_role === 'WING_MEMBER';
-  const isWingASJS = global_role === 'WING_ASJS' || wing_roles.some(r => r.wing_role === 'AS_JS');
+  const isWingASJS = ['WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD'].includes(global_role) || wing_roles.some(r => r.wing_role === 'AS_JS');
   const isRNAASJS = global_role === 'RNA_ASJS';
   const isChairmanPS = global_role === 'CHAIRMAN_PS';
   const isMember = global_role === 'MEMBER';

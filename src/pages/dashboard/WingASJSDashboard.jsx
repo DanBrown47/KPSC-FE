@@ -24,7 +24,12 @@ export const WingASJSDashboard = () => {
     <Box>
       <PageHeader
         title={`Welcome, ${currentUser?.user?.first_name || currentUser?.full_name?.split(' ')[0] || 'AS/JS'}`}
-        subtitle={currentUser?.wing?.name || 'Wing AS/JS'}
+        subtitle={
+          (currentUser?.wing_roles || [])
+            .filter(r => r.is_active !== false)
+            .map(r => r.wing_name)
+            .join(', ') || 'Wing AS/JS'
+        }
         actions={
           <Button variant="contained" onClick={() => navigate('/approvals')}>
             Review Approvals ({pendingApproval.length})

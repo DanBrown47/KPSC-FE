@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
 import CardContent from '@mui/material/CardContent';
@@ -32,8 +32,10 @@ export const CreateAgendaPage = () => {
   const { id } = useParams();
   const isEdit = !!id;
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const dispatch = useDispatch();
   const { currentUser } = usePermissions();
+  const preselectedMeeting = searchParams.get('meeting') || '';
 
   const [activeStep, setActiveStep] = useState(0);
   const [isDirty, setIsDirty] = useState(false);
@@ -42,7 +44,7 @@ export const CreateAgendaPage = () => {
   const [form, setForm] = useState({
     topic: '',
     wing: '',
-    meeting: '',
+    meeting: preselectedMeeting,
     agenda_form: '',
     file_number: '',
     description: '',
@@ -54,6 +56,19 @@ export const CreateAgendaPage = () => {
   const { data: existingItem, isLoading: itemLoading } = useGetAgendaItemQuery(id, { skip: !id });
   const { data: wingsData } = useGetWingsQuery();
   const wings = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
+
+  // Wing-scoped users (AS/JS, CA, Wing Member) should only see their assigned wings
+  const WING_SCOPED_ROLES = ['WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'CA'];
+  const isWingScoped = WING_SCOPED_ROLES.includes(currentUser?.global_role);
+  const userActiveWingRoles = isWingScoped
+    ? (currentUser?.wing_roles || []).filter(r => r.is_active !== false)
+    : [];
+  const userWingIds = userActiveWingRoles.map(r => r.wing);
+  const availableWings = isWingScoped && userWingIds.length > 0
+    ? wings.filter(w => userWingIds.includes(w.id))
+    : wings;
+  // Wing field is locked when user has exactly one available wing
+  const isSingleWing = isWingScoped && availableWings.length === 1;
   // Fetch agenda forms filtered by selected wing
   const { data: wingFormsData } = useGetWingAgendaFormsQuery(form.wing, { skip: !form.wing });
   const wingForms = Array.isArray(wingFormsData?.results)
@@ -81,6 +96,27 @@ export const CreateAgendaPage = () => {
       });
     }
   }, [existingItem, isEdit]);
+
+  // Apply auto-supplementary logic for preselected meeting once meetings list loads
+  useEffect(() => {
+    if (!isEdit && preselectedMeeting && meetings.length > 0) {
+      const mtg = meetings.find((m) => String(m.id) === String(preselectedMeeting));
+      if (mtg) {
+        setForm((p) => ({
+          ...p,
+          is_supplementary: mtg.status === 'FINALIZED' ? true : mtg.status === 'SCHEDULED' ? false : p.is_supplementary,
+        }));
+      }
+    }
+  }, [meetings, preselectedMeeting, isEdit]);
+
+  // Auto-select wing when user has exactly one available wing
+  useEffect(() => {
+    if (!isEdit && isSingleWing && !form.wing) {
+      setForm(p => ({ ...p, wing: availableWings[0].id, agenda_form: '' }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isSingleWing]);
 
   const handleField = (field) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
@@ -228,16 +264,6 @@ export const CreateAgendaPage = () => {
           {activeStep === 0 && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               <TextField
-                fullWidth
-                label="Topic"
-                value={form.topic}
-                onChange={handleField('topic')}
-                error={!!errors.topic}
-                helperText={errors.topic}
-                required
-                placeholder="Briefly describe the agenda item..."
-              />
-              <TextField
                 select
                 fullWidth
                 label="Meeting"
@@ -271,6 +297,18 @@ export const CreateAgendaPage = () => {
                   This meeting is completed. No new agenda items can be added.
                 </Alert>
               )}
+
+              <TextField
+                fullWidth
+                label="Topic"
+                value={form.topic}
+                onChange={handleField('topic')}
+                error={!!errors.topic}
+                helperText={errors.topic}
+                required
+                placeholder="Briefly describe the agenda item..."
+                disabled={!form.meeting}
+              />
               <TextField
                 select
                 fullWidth
@@ -280,9 +318,10 @@ export const CreateAgendaPage = () => {
                 error={!!errors.wing}
                 helperText={errors.wing}
                 required
+                disabled={!form.meeting || isSingleWing}
               >
                 <MenuItem value="">Select wing...</MenuItem>
-                {wings.map((w) => (
+                {availableWings.map((w) => (
                   <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>
                 ))}
               </TextField>
@@ -295,7 +334,7 @@ export const CreateAgendaPage = () => {
                 error={!!errors.agenda_form}
                 helperText={errors.agenda_form || (form.wing ? '' : 'Select a wing first')}
                 required
-                disabled={!form.wing}
+                disabled={!form.meeting || !form.wing}
               >
                 <MenuItem value="">Select agenda form...</MenuItem>
                 {wingForms.map((wf) => {
@@ -311,13 +350,14 @@ export const CreateAgendaPage = () => {
                 value={form.file_number}
                 onChange={handleField('file_number')}
                 placeholder="e.g. KPS/2026/001"
+                disabled={!form.meeting}
               />
               <FormControlLabel
                 control={
                   <Checkbox
                     checked={form.is_supplementary}
                     onChange={handleField('is_supplementary')}
-                    disabled={selectedMeetingStatus === 'FINALIZED'}
+                    disabled={!form.meeting || selectedMeetingStatus === 'FINALIZED'}
                   />
                 }
                 label={

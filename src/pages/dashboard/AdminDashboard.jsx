@@ -37,7 +37,7 @@ export const AdminDashboard = () => {
           <AdminActionCard
             icon={PeopleIcon}
             title="User Management"
-            description="Create, edit, and manage user accounts and role assignments."
+            description="Manage user accounts and role assignments."
             path="/admin/users"
             color="#1A4480"
           />

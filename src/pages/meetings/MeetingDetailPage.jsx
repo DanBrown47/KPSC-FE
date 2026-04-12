@@ -10,6 +10,7 @@ import CircularProgress from '@mui/material/CircularProgress';
 import LinearProgress from '@mui/material/LinearProgress';
 import GavelIcon from '@mui/icons-material/Gavel';
 import DownloadIcon from '@mui/icons-material/Download';
+import AddIcon from '@mui/icons-material/Add';
 import { format } from 'date-fns';
 import { useGetMeetingQuery, useFinalizeMeetingMutation } from '../../store/api/meetingsApi.js';
 import { useGetAgendaItemsQuery } from '../../store/api/agendaApi.js';
@@ -68,7 +69,8 @@ export const MeetingDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { isChairmanPS, isRNAASJS, isChairman } = usePermissions();
+  const { isChairmanPS, isRNAASJS, isChairman, isWingMember, isWingASJS } = usePermissions();
+  const isWingUser = isWingMember || isWingASJS;
   const { data: meeting, isLoading } = useGetMeetingQuery(id);
   const [finalizeMeeting, { isLoading: finalizing }] = useFinalizeMeetingMutation();
 
@@ -99,7 +101,17 @@ export const MeetingDetailPage = () => {
         breadcrumbs={[{ label: 'Meetings', href: '/meetings' }, { label: meeting.title }]}
         actions={
           <Box sx={{ display: 'flex', gap: 1 }}>
-            <ReportButton meetingId={id} />
+            {isWingUser ? (
+              <Button
+                variant="outlined"
+                startIcon={<AddIcon />}
+                onClick={() => navigate(`/agenda/create?meeting=${id}`)}
+              >
+                Create Agenda Item
+              </Button>
+            ) : (
+              <ReportButton meetingId={id} />
+            )}
             {canFinalize && meeting.status === 'SCHEDULED' && (
               <Button
                 variant="outlined"

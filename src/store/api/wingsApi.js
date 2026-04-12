@@ -30,6 +30,10 @@ export const wingsApi = createApi({
       }),
       invalidatesTags: ['Wing'],
     }),
+    deleteWing: builder.mutation({
+      query: (id) => ({ url: `wings/${id}/`, method: 'DELETE' }),
+      invalidatesTags: ['Wing'],
+    }),
     updateWingPriority: builder.mutation({
       query: (wings) => ({
         url: 'wings/reorder/',
@@ -74,6 +78,7 @@ export const {
   useGetWingQuery,
   useCreateWingMutation,
   useUpdateWingMutation,
+  useDeleteWingMutation,
   useUpdateWingPriorityMutation,
   useGetApprovalConfigQuery,
   useUpdateApprovalConfigMutation,

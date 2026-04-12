@@ -4,11 +4,11 @@ import { createSlice } from '@reduxjs/toolkit';
 export const deriveMenuPermissions = (user) => {
   if (!user) return null;
   const role = user.global_role;
-  const agendaRoles = ['WING_MEMBER', 'WING_ASJS', 'RNA_ASJS', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA', 'CA', 'RA_WING'];
+  const agendaRoles = ['WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'RNA_ASJS', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA', 'CA', 'RA_WING'];
   return {
     meeting_viewer: role !== 'WEB_ADMIN',
     agenda_viewer: agendaRoles.includes(role),
-    approver: ['WING_ASJS', 'RNA_ASJS'].includes(role),
+    approver: ['WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'RNA_ASJS'].includes(role),
     consolidator: role === 'RNA_ASJS',
     report_viewer: ['CHAIRMAN_PS', 'RNA_ASJS', 'CHAIRMAN', 'SECRETARY'].includes(role),
     user_manager: role === 'WEB_ADMIN',

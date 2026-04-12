@@ -15,6 +15,9 @@ const ROLE_DASHBOARDS = {
   MEMBER: MemberDashboard,
   RNA_ASJS: RNADashboard,
   WING_ASJS: WingASJSDashboard,
+  WING_AS: WingASJSDashboard,
+  WING_JS: WingASJSDashboard,
+  WING_HEAD: WingASJSDashboard,
   WING_MEMBER: WingMemberDashboard,
   WEB_ADMIN: AdminDashboard,
 };

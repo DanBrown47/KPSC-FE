@@ -45,7 +45,7 @@ export const WingMemberDashboard = () => {
     <Box>
       <PageHeader
         title={`Welcome, ${currentUser?.user?.first_name || currentUser?.full_name?.split(' ')[0] || 'Wing Member'}`}
-        subtitle={currentUser?.wing?.name || ''}
+        subtitle={currentUser?.wing_roles?.find(r => r.is_active !== false)?.wing_name || ''}
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/agenda/create')}>
             New Agenda Item
