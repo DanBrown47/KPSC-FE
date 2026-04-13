@@ -28,6 +28,9 @@ import { UserManagementPage } from './pages/admin/UserManagementPage.jsx';
 import { WingConfigPage } from './pages/admin/WingConfigPage.jsx';
 import { AuditLogPage } from './pages/admin/AuditLogPage.jsx';
 
+// Wings
+import { WingMarketplacePage } from './pages/wings/WingMarketplacePage.jsx';
+
 // Reports
 import { ReportsPage } from './pages/reports/ReportsPage.jsx';
 
@@ -64,6 +67,9 @@ function App() {
 
         {/* Sitting */}
         <Route path="sitting/:meetingId" element={<SittingPage />} />
+
+        {/* Wing Marketplace */}
+        <Route path="my-wings" element={<WingMarketplacePage />} />
 
         {/* Admin */}
         <Route

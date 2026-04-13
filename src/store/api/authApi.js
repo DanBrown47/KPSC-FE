@@ -29,6 +29,13 @@ export const authApi = createApi({
         body: { refresh: refreshToken },
       }),
     }),
+    switchWing: builder.mutation({
+      query: (wingId) => ({
+        url: 'auth/switch-wing/',
+        method: 'POST',
+        body: { wing_id: wingId },
+      }),
+    }),
   }),
 });
 
@@ -37,4 +44,5 @@ export const {
   useGetMeQuery,
   useLogoutMutation,
   useRefreshTokenMutation,
+  useSwitchWingMutation,
 } = authApi;

@@ -16,6 +16,7 @@ import MergeIcon from '@mui/icons-material/Merge';
 import GavelIcon from '@mui/icons-material/Gavel';
 import PeopleIcon from '@mui/icons-material/People';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -29,6 +30,7 @@ const ALL_NAV_ITEMS = [
   { key: 'approvals', label: 'Approvals', path: '/approvals', icon: PendingActionsIcon, permission: 'approver' },
   { key: 'consolidation', label: 'Consolidation', path: '/consolidation', icon: MergeIcon, permission: 'consolidator' },
   { key: 'reports', label: 'Reports', path: '/reports', icon: BarChartIcon, permission: 'report_viewer' },
+  { key: 'my_wings', label: 'My Wings', path: '/my-wings', icon: SwapHorizIcon, permission: 'wing_switcher' },
   { divider: true },
   { key: 'admin_users', label: 'User Management', path: '/admin/users', icon: PeopleIcon, permission: 'user_manager' },
   { key: 'admin_wings', label: 'Wing Config', path: '/admin/wings', icon: AccountTreeIcon, permission: 'config_manager' },
@@ -90,6 +92,14 @@ export const Sidebar = () => {
           >
             {currentUser.global_role?.replace(/_/g, ' ')}
           </Typography>
+          {currentUser.active_wing_name && (
+            <Typography
+              variant="caption"
+              sx={{ display: 'block', color: '#F0B429', fontSize: '0.6875rem', mt: 0.25, fontWeight: 600 }}
+            >
+              {currentUser.active_wing_code} Wing
+            </Typography>
+          )}
         </Box>
       )}
 

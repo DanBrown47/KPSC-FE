@@ -15,21 +15,22 @@ export const WingASJSDashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  const { data: allItems, isLoading } = useGetAgendaItemsQuery({ limit: 100 });
+  const activeWingId = currentUser?.active_wing_id ?? null;
+  const queryParams = { limit: 100, ...(activeWingId ? { wing: activeWingId } : {}) };
+  const { data: allItems, isLoading } = useGetAgendaItemsQuery(queryParams);
   const items = Array.isArray(allItems?.results) ? allItems.results : Array.isArray(allItems) ? allItems : [];
   const returnedItems = items.filter((i) => i.status === 'DRAFT' && i.return_comment);
   const pendingApproval = items.filter((i) => i.status === 'PENDING_WING_APPROVAL');
+
+  const activeWingName = currentUser?.active_wing_name
+    || (currentUser?.wing_roles || []).find(r => r.is_active !== false)?.wing_name
+    || 'Wing AS/JS';
 
   return (
     <Box>
       <PageHeader
         title={`Welcome, ${currentUser?.user?.first_name || currentUser?.full_name?.split(' ')[0] || 'AS/JS'}`}
-        subtitle={
-          (currentUser?.wing_roles || [])
-            .filter(r => r.is_active !== false)
-            .map(r => r.wing_name)
-            .join(', ') || 'Wing AS/JS'
-        }
+        subtitle={activeWingName}
         actions={
           <Button variant="contained" onClick={() => navigate('/approvals')}>
             Review Approvals ({pendingApproval.length})

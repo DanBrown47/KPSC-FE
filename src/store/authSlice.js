@@ -5,6 +5,9 @@ export const deriveMenuPermissions = (user) => {
   if (!user) return null;
   const role = user.global_role;
   const agendaRoles = ['WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'RNA_ASJS', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA', 'CA', 'RA_WING'];
+  const wingRoles = ['WING_AS', 'WING_JS', 'WING_ASJS', 'WING_MEMBER', 'WING_HEAD', 'CA', 'RA_WING', 'RNA_ASJS'];
+  // wing_switcher: visible when user has multiple wing assignments (derived at runtime from wing_roles length)
+  const hasMultipleWings = Array.isArray(user.wing_roles) && user.wing_roles.filter((r) => r.is_active).length > 1;
   return {
     meeting_viewer: role !== 'WEB_ADMIN',
     agenda_viewer: agendaRoles.includes(role),
@@ -14,6 +17,7 @@ export const deriveMenuPermissions = (user) => {
     user_manager: role === 'WEB_ADMIN',
     config_manager: role === 'WEB_ADMIN',
     audit_viewer: ['WEB_ADMIN', 'CHAIRMAN_PS'].includes(role),
+    wing_switcher: wingRoles.includes(role) && hasMultipleWings,
   };
 };
 

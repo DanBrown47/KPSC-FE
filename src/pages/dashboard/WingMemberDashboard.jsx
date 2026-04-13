@@ -33,7 +33,9 @@ export const WingMemberDashboard = () => {
   const navigate = useNavigate();
   const { currentUser } = useAuth();
 
-  const { data: allItems, isLoading } = useGetAgendaItemsQuery({ limit: 100 });
+  const activeWingId = currentUser?.active_wing_id ?? null;
+  const queryParams = { limit: 100, ...(activeWingId ? { wing: activeWingId } : {}) };
+  const { data: allItems, isLoading } = useGetAgendaItemsQuery(queryParams);
   const items = Array.isArray(allItems?.results) ? allItems.results : Array.isArray(allItems) ? allItems : [];
 
   const returnedItems = items.filter((i) => i.status === 'DRAFT' && i.return_comment);
@@ -45,7 +47,7 @@ export const WingMemberDashboard = () => {
     <Box>
       <PageHeader
         title={`Welcome, ${currentUser?.user?.first_name || currentUser?.full_name?.split(' ')[0] || 'Wing Member'}`}
-        subtitle={currentUser?.wing_roles?.find(r => r.is_active !== false)?.wing_name || ''}
+        subtitle={currentUser?.active_wing_name || currentUser?.wing_roles?.find(r => r.is_active !== false)?.wing_name || ''}
         actions={
           <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/agenda/create')}>
             New Agenda Item
