@@ -11,6 +11,7 @@ import DialogTitle from '@mui/material/DialogTitle';
 import DialogContent from '@mui/material/DialogContent';
 import DialogActions from '@mui/material/DialogActions';
 import TextField from '@mui/material/TextField';
+import MenuItem from '@mui/material/MenuItem';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddIcon from '@mui/icons-material/Add';
@@ -20,6 +21,19 @@ import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { usePermissions } from '../../hooks/usePermissions.js';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
+
+const ORDINALS = [
+  '1st','2nd','3rd','4th','5th','6th','7th','8th','9th','10th',
+  '11th','12th','13th','14th','15th','16th','17th','18th','19th','20th',
+];
+
+const buildMeetingTitle = (sittingNumber, date) => {
+  if (!sittingNumber || !date) return '';
+  const month = format(date, 'MMMM').toUpperCase();
+  const day = format(date, 'do').toUpperCase();
+  const year = format(date, 'yyyy');
+  return `${sittingNumber} SITTING OF THE COMMISSION FOR THE MONTH OF ${month} HELD ON ${day} ${month} ${year}`;
+};
 
 const STATUS_COLORS = {
   SCHEDULED: '#1D4ED8',
@@ -34,7 +48,7 @@ export const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [newMeeting, setNewMeeting] = useState({ title: '', venue: '', description: '', time: '09:00' });
+  const [newMeeting, setNewMeeting] = useState({ sittingNumber: '', venue: '', description: '', time: '09:00' });
 
   const { data: meetingsData } = useGetMeetingsQuery({
     month: format(currentDate, 'yyyy-MM'),
@@ -73,14 +87,16 @@ export const CalendarPage = () => {
       const [hours, minutes] = newMeeting.time.split(':').map(Number);
       const datetime = new Date(selectedDate);
       datetime.setHours(hours, minutes, 0, 0);
-      const { time: _time, ...meetingFields } = newMeeting;
+      const { time: _time, sittingNumber, ...meetingFields } = newMeeting;
+      const title = buildMeetingTitle(sittingNumber, selectedDate);
       const meeting = await createMeeting({
         ...meetingFields,
+        title,
         sitting_date: format(datetime, "yyyy-MM-dd'T'HH:mm:ssxxx"),
       }).unwrap();
       dispatch(showToast({ message: 'Meeting scheduled successfully', severity: 'success' }));
       setCreateOpen(false);
-      setNewMeeting({ title: '', venue: '', description: '', time: '09:00' });
+      setNewMeeting({ sittingNumber: '', venue: '', description: '', time: '09:00' });
       navigate(`/meetings/${meeting.id}`);
     } catch {
       dispatch(showToast({ message: 'Failed to schedule meeting', severity: 'error' }));
@@ -178,7 +194,26 @@ export const CalendarPage = () => {
         <DialogTitle>Schedule Meeting — {selectedDate ? format(selectedDate, 'dd MMMM yyyy') : ''}</DialogTitle>
         <DialogContent>
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
-            <TextField fullWidth label="Meeting Title" value={newMeeting.title} onChange={(e) => setNewMeeting((p) => ({ ...p, title: e.target.value }))} required />
+            <TextField
+              select
+              fullWidth
+              label="Sitting Number"
+              value={newMeeting.sittingNumber}
+              onChange={(e) => setNewMeeting((p) => ({ ...p, sittingNumber: e.target.value }))}
+              required
+            >
+              {ORDINALS.map((o) => (
+                <MenuItem key={o} value={o}>{o}</MenuItem>
+              ))}
+            </TextField>
+            {newMeeting.sittingNumber && selectedDate && (
+              <Box sx={{ bgcolor: '#F1F5F9', borderRadius: 1, p: 1.5 }}>
+                <Typography variant="caption" sx={{ color: 'text.secondary', display: 'block', mb: 0.5 }}>Meeting Title Preview</Typography>
+                <Typography variant="body2" sx={{ fontWeight: 600, letterSpacing: 0.3 }}>
+                  {buildMeetingTitle(newMeeting.sittingNumber, selectedDate)}
+                </Typography>
+              </Box>
+            )}
             <TextField fullWidth label="Time" type="time" value={newMeeting.time} onChange={(e) => setNewMeeting((p) => ({ ...p, time: e.target.value }))} required InputLabelProps={{ shrink: true }} />
             <TextField fullWidth label="Venue" value={newMeeting.venue} onChange={(e) => setNewMeeting((p) => ({ ...p, venue: e.target.value }))} required />
             <TextField fullWidth label="Description" value={newMeeting.description} onChange={(e) => setNewMeeting((p) => ({ ...p, description: e.target.value }))} multiline rows={2} />
@@ -186,7 +221,7 @@ export const CalendarPage = () => {
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button onClick={() => setCreateOpen(false)}>Cancel</Button>
-          <Button variant="contained" onClick={handleCreate} disabled={creating || !newMeeting.title || !newMeeting.venue}>
+          <Button variant="contained" onClick={handleCreate} disabled={creating || !newMeeting.sittingNumber || !newMeeting.venue}>
             {creating ? 'Scheduling...' : 'Schedule Meeting'}
           </Button>
         </DialogActions>
