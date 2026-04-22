@@ -15,6 +15,8 @@ import { EmptyState } from '../../components/common/EmptyState.jsx';
 import { usePermissions } from '../../hooks/usePermissions.js';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
+import Divider from '@mui/material/Divider';
+import Chip from '@mui/material/Chip';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
 import MergeIcon from '@mui/icons-material/Merge';
 
@@ -170,6 +172,35 @@ export const AgendaApprovalPage = () => {
                       <Box sx={{ mt: 1, p: 1.5, bgcolor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 1 }}>
                         <Typography variant="caption" sx={{ color: '#92400E', fontWeight: 600 }}>Previously Returned:</Typography>
                         <Typography variant="body2" sx={{ color: '#78350F', mt: 0.25 }}>{item.return_comment}</Typography>
+                      </Box>
+                    )}
+                    {item.form_data && Object.keys(item.form_data).length > 0 && (
+                      <Box sx={{ mt: 1.5 }}>
+                        <Divider sx={{ mb: 1 }} />
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                          {item.form_data.subject && (
+                            <Box sx={{ width: '100%' }}>
+                              <Typography variant="caption" color="text.secondary" fontWeight={600}>Subject</Typography>
+                              <Typography variant="body2" sx={{ mt: 0.25 }}>
+                                {item.form_data.subject.length > 200
+                                  ? `${item.form_data.subject.slice(0, 200)}…`
+                                  : item.form_data.subject}
+                              </Typography>
+                            </Box>
+                          )}
+                          {Object.entries(item.form_data)
+                            .filter(([k]) => k !== 'subject' && k !== 'remarks_proposal' && k !== 'remarks_proposals')
+                            .slice(0, 4)
+                            .map(([k, v]) => v !== '' && v !== null && v !== undefined ? (
+                              <Chip
+                                key={k}
+                                label={`${k.replace(/_/g, ' ')}: ${v}`}
+                                size="small"
+                                variant="outlined"
+                                sx={{ textTransform: 'capitalize', fontSize: '0.7rem' }}
+                              />
+                            ) : null)}
+                        </Box>
                       </Box>
                     )}
                   </Box>

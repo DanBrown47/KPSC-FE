@@ -18,18 +18,29 @@ export const getAgendaActions = (item, currentUser) => {
   const isWebAdmin = global_role === 'WEB_ADMIN';
 
   // Wing is not a direct FK on UserProfile — derive from wing_roles
-  const userWingId = currentUser.wing_roles?.find(r => r.is_active !== false)?.wing;
   const itemWingId = item.wing?.id || item.wing;
-  const isOwnWing = userWingId && itemWingId && userWingId === itemWingId;
+  // isOwnWing: true if any of the user's active wing roles matches the item's wing
+  const isOwnWing = wing_roles.some(r => r.is_active !== false && r.wing === itemWingId);
+
+  // Check fine-grained permission sub-roles for agenda item management
+  const hasAgendaPerm = (permRole) =>
+    wing_roles.some(
+      r => r.wing === itemWingId && r.is_active !== false &&
+           r.permission_roles?.some(p => p.permission_role === permRole)
+    );
+  const canCreate = (isWingMember && isOwnWing) || hasAgendaPerm('agenda_item_create');
+  const canEdit   = (isWingMember && isOwnWing) || hasAgendaPerm('agenda_item_edit');
+  const canDelete = (isWingMember && isOwnWing) || hasAgendaPerm('agenda_item_delete');
 
   switch (status) {
-    case 'DRAFT':
-      if (isWingMember && isOwnWing) {
-        actions.push({ key: 'edit', label: 'Edit', variant: 'outlined', color: 'primary' });
-        actions.push({ key: 'submit', label: 'Submit for Approval', variant: 'contained', color: 'primary' });
-        actions.push({ key: 'delete', label: 'Delete', variant: 'outlined', color: 'error' });
+    case 'DRAFT': {
+      if (canEdit || canCreate) {
+        if (canEdit) actions.push({ key: 'edit', label: 'Edit', variant: 'outlined', color: 'primary' });
+        if (canCreate) actions.push({ key: 'submit', label: 'Submit for Approval', variant: 'contained', color: 'primary' });
+        if (canDelete) actions.push({ key: 'delete', label: 'Delete', variant: 'outlined', color: 'error' });
       }
       break;
+    }
 
     case 'PENDING_WING_APPROVAL':
       if (isWingASJS && isOwnWing) {

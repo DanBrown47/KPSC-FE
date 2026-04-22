@@ -14,11 +14,13 @@ import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
-import { useGetAgendaItemQuery, useCreateAgendaItemMutation, useUpdateAgendaItemMutation } from '../../store/api/agendaApi.js';
+import InputAdornment from '@mui/material/InputAdornment';
+import { useGetAgendaItemQuery, useCreateAgendaItemMutation, useUpdateAgendaItemMutation, useLazyGetNextFileNumberQuery } from '../../store/api/agendaApi.js';
 import { useGetWingsQuery, useGetWingAgendaFormsQuery } from '../../store/api/wingsApi.js';
 import { useGetMeetingsQuery } from '../../store/api/meetingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { AutosaveIndicator } from '../../components/common/AutosaveIndicator.jsx';
+import { DynamicAgendaForm } from '../../components/agenda/DynamicAgendaForm.jsx';
 import { useAgendaAutosave } from '../../hooks/useAgendaAutosave.js';
 import { useUnsavedWarning } from '../../hooks/useUnsavedWarning.js';
 import { usePermissions } from '../../hooks/usePermissions.js';
@@ -27,6 +29,8 @@ import { showToast } from '../../store/uiSlice.js';
 import { AttachmentUpload } from '../../components/agenda/AttachmentUpload.jsx';
 
 const STEPS = ['Basic Information', 'Content & Recommendation', 'Attachments'];
+
+const WING_SCOPED_ROLES = ['WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'CA'];
 
 export const CreateAgendaPage = () => {
   const { id } = useParams();
@@ -41,6 +45,10 @@ export const CreateAgendaPage = () => {
   const [isDirty, setIsDirty] = useState(false);
   const [savedItemId, setSavedItemId] = useState(id || null);
 
+  // File prefix selection state
+  const [selectedPrefix, setSelectedPrefix] = useState('');
+  const [fileNumPart, setFileNumPart] = useState('');
+
   const [form, setForm] = useState({
     topic: '',
     wing: '',
@@ -50,6 +58,7 @@ export const CreateAgendaPage = () => {
     description: '',
     discussion_points: '',
     is_supplementary: false,
+    form_data: {},
   });
   const [errors, setErrors] = useState({});
 
@@ -57,9 +66,16 @@ export const CreateAgendaPage = () => {
   const { data: wingsData } = useGetWingsQuery();
   const wings = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
 
-  // Wing-scoped users (AS/JS, CA, Wing Member) should only see their assigned wings
-  const WING_SCOPED_ROLES = ['WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'CA'];
   const isWingScoped = WING_SCOPED_ROLES.includes(currentUser?.global_role);
+  const activeWingId = currentUser?.active_wing_id;
+
+  // If active_wing_id isn't set, fall back to the user's single active wing (if unambiguous)
+  const userActiveWingIds = isWingScoped
+    ? (currentUser?.wing_roles || []).filter(r => r.is_active !== false).map(r => r.wing)
+    : [];
+  const effectiveWingId = activeWingId || (userActiveWingIds.length === 1 ? userActiveWingIds[0] : null);
+
+  // Available wings for display (still needed for the locked label)
   const userActiveWingRoles = isWingScoped
     ? (currentUser?.wing_roles || []).filter(r => r.is_active !== false)
     : [];
@@ -67,35 +83,87 @@ export const CreateAgendaPage = () => {
   const availableWings = isWingScoped && userWingIds.length > 0
     ? wings.filter(w => userWingIds.includes(w.id))
     : wings;
-  // Wing field is locked when user has exactly one available wing
-  const isSingleWing = isWingScoped && availableWings.length === 1;
+
+  // Derive file prefixes from selected wing
+  const selectedWingData = wings.find(w => w.id === form.wing || w.id === String(form.wing));
+  const filePrefixes = selectedWingData?.file_prefix
+    ? selectedWingData.file_prefix.split(',').map(p => p.trim()).filter(Boolean)
+    : [];
+  const hasMultiplePrefixes = filePrefixes.length > 1;
+  const hasSinglePrefix = filePrefixes.length === 1;
+
   // Fetch agenda forms filtered by selected wing
   const { data: wingFormsData } = useGetWingAgendaFormsQuery(form.wing, { skip: !form.wing });
   const wingForms = Array.isArray(wingFormsData?.results)
     ? wingFormsData.results
     : Array.isArray(wingFormsData) ? wingFormsData : [];
+
+  // Derive field definitions for selected agenda form
+  const selectedWingForm = wingForms.find(
+    wf => String(wf.agenda_form) === String(form.agenda_form)
+  );
+  const selectedFormFields = selectedWingForm?.agenda_form_fields || [];
+
   // Fetch all meetings (including FINALIZED) so users can create supplementary items
   const { data: meetingsData } = useGetMeetingsQuery({ limit: 100 });
   const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
 
   const [createAgendaItem, { isLoading: creating }] = useCreateAgendaItemMutation();
   const [updateAgendaItem] = useUpdateAgendaItemMutation();
+  const [fetchNextFileNumber] = useLazyGetNextFileNumberQuery();
 
   // Pre-fill form when editing
   useEffect(() => {
     if (existingItem && isEdit) {
+      const rawFileNumber = existingItem.file_number || '';
       setForm({
         topic: existingItem.topic || '',
         wing: existingItem.wing?.id || existingItem.wing || '',
         meeting: existingItem.meeting?.id || existingItem.meeting || '',
         agenda_form: existingItem.agenda_form?.id || existingItem.agenda_form || '',
-        file_number: existingItem.file_number || '',
+        file_number: rawFileNumber,
         description: existingItem.description || '',
         discussion_points: existingItem.discussion_points || '',
         is_supplementary: existingItem.is_supplementary || false,
+        form_data: existingItem.form_data || {},
       });
+      setFileNumPart(rawFileNumber);
     }
   }, [existingItem, isEdit]);
+
+  // Lock wing to effective wing for wing-scoped users
+  useEffect(() => {
+    if (!isEdit && isWingScoped && effectiveWingId && !form.wing) {
+      setForm(p => ({ ...p, wing: effectiveWingId, agenda_form: '' }));
+    }
+  }, [isWingScoped, effectiveWingId, isEdit]);
+
+  // Auto-set single prefix when wing changes
+  useEffect(() => {
+    if (hasSinglePrefix && selectedPrefix !== filePrefixes[0]) {
+      setSelectedPrefix(filePrefixes[0]);
+    } else if (!hasSinglePrefix && !hasMultiplePrefixes) {
+      setSelectedPrefix('');
+    }
+  }, [form.wing, filePrefixes.join(',')]);
+
+  // Auto-fill file number part when prefix and wing are set (only when empty)
+  useEffect(() => {
+    if (!isEdit && form.wing && selectedPrefix && !fileNumPart) {
+      fetchNextFileNumber({ wingId: form.wing, prefix: selectedPrefix })
+        .unwrap()
+        .then(data => { if (data?.file_num_part) setFileNumPart(data.file_num_part); })
+        .catch(() => {});
+    }
+  }, [selectedPrefix, form.wing]);
+
+  // Sync derived file_number into form whenever prefix/number parts change
+  useEffect(() => {
+    const derived = selectedPrefix
+      ? `${selectedPrefix}/${fileNumPart}`
+      : fileNumPart;
+    setForm(p => ({ ...p, file_number: derived }));
+  }, [selectedPrefix, fileNumPart]);
 
   // Apply auto-supplementary logic for preselected meeting once meetings list loads
   useEffect(() => {
@@ -110,14 +178,6 @@ export const CreateAgendaPage = () => {
     }
   }, [meetings, preselectedMeeting, isEdit]);
 
-  // Auto-select wing when user has exactly one available wing
-  useEffect(() => {
-    if (!isEdit && isSingleWing && !form.wing) {
-      setForm(p => ({ ...p, wing: availableWings[0].id, agenda_form: '' }));
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isSingleWing]);
-
   const handleField = (field) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setForm((p) => ({ ...p, [field]: value }));
@@ -127,24 +187,28 @@ export const CreateAgendaPage = () => {
 
   const handleWingChange = (e) => {
     const wingId = e.target.value;
-    // Reset agenda_form when wing changes — the available forms differ per wing
-    setForm((p) => ({ ...p, wing: wingId, agenda_form: '' }));
+    setForm((p) => ({ ...p, wing: wingId, agenda_form: '', form_data: {} }));
+    setSelectedPrefix('');
+    setFileNumPart('');
     setIsDirty(true);
     if (errors.wing) setErrors((p) => ({ ...p, wing: '' }));
+  };
+
+  const handleFormDataChange = (key, value) => {
+    setForm(p => ({ ...p, form_data: { ...p.form_data, [key]: value } }));
+    setIsDirty(true);
   };
 
   // Derive selected meeting object to check its status
   const selectedMeeting = meetings.find((m) => String(m.id) === String(form.meeting));
   const selectedMeetingStatus = selectedMeeting?.status;
 
-  // Custom handler for meeting field — auto-sets is_supplementary when FINALIZED
   const handleMeetingChange = (e) => {
     const meetingId = e.target.value;
     const mtg = meetings.find((m) => String(m.id) === String(meetingId));
     setForm((p) => ({
       ...p,
       meeting: meetingId,
-      // Auto-check supplementary when a FINALIZED meeting is selected; clear when SCHEDULED
       is_supplementary: mtg?.status === 'FINALIZED' ? true
         : mtg?.status === 'SCHEDULED' ? false
         : p.is_supplementary,
@@ -172,7 +236,10 @@ export const CreateAgendaPage = () => {
       if (!form.agenda_form) errs.agenda_form = 'Agenda form is required';
     }
     if (step === 1) {
-      if (!form.description.trim()) errs.description = 'Description is required';
+      const subjectField = selectedFormFields.find(f => f.key === 'subject');
+      if (subjectField?.required && !form.form_data?.subject?.trim()) {
+        errs.form_data_subject = 'Subject is required';
+      }
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -181,7 +248,6 @@ export const CreateAgendaPage = () => {
   const handleNext = async () => {
     if (!validateStep(activeStep)) return;
 
-    // Auto-create draft on step 1 completion
     if (activeStep === 0 && !savedItemId) {
       try {
         const result = await createAgendaItem(form).unwrap();
@@ -232,7 +298,6 @@ export const CreateAgendaPage = () => {
         ]}
       />
 
-      {/* Unsaved warning dialog */}
       {isBlocked && (
         <Box sx={{ position: 'fixed', inset: 0, bgcolor: 'rgba(0,0,0,0.5)', zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
           <Card sx={{ maxWidth: 400, p: 2 }}>
@@ -286,7 +351,6 @@ export const CreateAgendaPage = () => {
                 ))}
               </TextField>
 
-              {/* Meeting status alerts */}
               {selectedMeetingStatus === 'FINALIZED' && (
                 <Alert severity="info">
                   This meeting is finalized. New agenda items will be created as <strong>supplementary</strong>.
@@ -309,6 +373,8 @@ export const CreateAgendaPage = () => {
                 placeholder="Briefly describe the agenda item..."
                 disabled={!form.meeting}
               />
+
+              {/* Wing — locked to active wing for wing-scoped users */}
               <TextField
                 select
                 fullWidth
@@ -316,15 +382,16 @@ export const CreateAgendaPage = () => {
                 value={form.wing}
                 onChange={handleWingChange}
                 error={!!errors.wing}
-                helperText={errors.wing}
+                helperText={isWingScoped && effectiveWingId ? 'Locked to your active wing' : errors.wing}
                 required
-                disabled={!form.meeting || isSingleWing}
+                disabled={!form.meeting || (isWingScoped && !!effectiveWingId)}
               >
                 <MenuItem value="">Select wing...</MenuItem>
                 {availableWings.map((w) => (
                   <MenuItem key={w.id} value={w.id}>{w.name}</MenuItem>
                 ))}
               </TextField>
+
               <TextField
                 select
                 fullWidth
@@ -337,21 +404,56 @@ export const CreateAgendaPage = () => {
                 disabled={!form.meeting || !form.wing}
               >
                 <MenuItem value="">Select agenda form...</MenuItem>
-                {wingForms.map((wf) => {
-                  const af = wf.agenda_form || wf;
-                  return (
-                    <MenuItem key={af.id} value={af.id}>{af.name || af.code}</MenuItem>
-                  );
-                })}
+                {wingForms.map((wf) => (
+                  <MenuItem key={wf.agenda_form} value={wf.agenda_form}>
+                    {wf.agenda_form_name || wf.agenda_form_code}
+                  </MenuItem>
+                ))}
               </TextField>
-              <TextField
-                fullWidth
-                label="File Number"
-                value={form.file_number}
-                onChange={handleField('file_number')}
-                placeholder="e.g. KPS/2026/001"
-                disabled={!form.meeting}
-              />
+
+              {/* File Number — with prefix support */}
+              {hasMultiplePrefixes ? (
+                <Box sx={{ display: 'flex', gap: 1.5 }}>
+                  <TextField
+                    select
+                    label="File Prefix"
+                    value={selectedPrefix}
+                    onChange={(e) => { setSelectedPrefix(e.target.value); setIsDirty(true); }}
+                    sx={{ minWidth: 140 }}
+                    required
+                    disabled={!form.wing}
+                  >
+                    <MenuItem value="">Select prefix...</MenuItem>
+                    {filePrefixes.map(p => (
+                      <MenuItem key={p} value={p}>{p}</MenuItem>
+                    ))}
+                  </TextField>
+                  <TextField
+                    fullWidth
+                    label="File Number"
+                    value={fileNumPart}
+                    onChange={(e) => { setFileNumPart(e.target.value); setIsDirty(true); }}
+                    placeholder="e.g. 2026/001"
+                    InputProps={selectedPrefix ? {
+                      startAdornment: <InputAdornment position="start">{selectedPrefix}/</InputAdornment>,
+                    } : undefined}
+                    disabled={!form.wing}
+                  />
+                </Box>
+              ) : (
+                <TextField
+                  fullWidth
+                  label="File Number"
+                  value={fileNumPart}
+                  onChange={(e) => { setFileNumPart(e.target.value); setIsDirty(true); }}
+                  placeholder={hasSinglePrefix ? `e.g. ${filePrefixes[0]}/2026/001` : 'e.g. KPS/2026/001'}
+                  InputProps={hasSinglePrefix ? {
+                    startAdornment: <InputAdornment position="start">{filePrefixes[0]}/</InputAdornment>,
+                  } : undefined}
+                  disabled={!form.meeting}
+                />
+              )}
+
               <FormControlLabel
                 control={
                   <Checkbox
@@ -369,29 +471,25 @@ export const CreateAgendaPage = () => {
             </Box>
           )}
 
-          {/* Step 2: Content */}
+          {/* Step 2: Content — dynamic per agenda form */}
           {activeStep === 1 && (
             <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
-              <TextField
-                fullWidth
-                multiline
-                rows={6}
-                label="Description"
-                value={form.description}
-                onChange={handleField('description')}
-                error={!!errors.description}
-                helperText={errors.description || 'Provide detailed background information'}
-                required
-              />
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                label="Discussion Points (Optional)"
-                value={form.discussion_points}
-                onChange={handleField('discussion_points')}
-                helperText="Key points for discussion"
-              />
+              {selectedFormFields.length === 0 ? (
+                <Alert severity="warning">
+                  No fields configured for this agenda form. Please contact your administrator.
+                </Alert>
+              ) : (
+                <>
+                  {errors.form_data_subject && (
+                    <Alert severity="error">{errors.form_data_subject}</Alert>
+                  )}
+                  <DynamicAgendaForm
+                    fields={selectedFormFields}
+                    formData={form.form_data}
+                    onChange={handleFormDataChange}
+                  />
+                </>
+              )}
             </Box>
           )}
 

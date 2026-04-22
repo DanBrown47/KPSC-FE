@@ -38,6 +38,9 @@ const STATUS_OPTIONS = [
 export const AgendaManagementPage = () => {
   const navigate = useNavigate();
   const { isWingMember, currentUser } = usePermissions();
+  const canCreateAgendaItem = isWingMember || (currentUser?.wing_roles || []).some(
+    r => r.is_active !== false && r.permission_roles?.some(p => p.permission_role === 'agenda_item_create')
+  );
   const { viewMode, setViewMode } = useViewPreference('agenda');
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 20 });
   const [search, setSearch] = useState('');
@@ -83,10 +86,10 @@ export const AgendaManagementPage = () => {
       ),
     },
     {
-      field: 'wing',
+      field: 'wing_name',
       headerName: 'Wing',
       width: 140,
-      valueGetter: (value) => value?.name || value || '—',
+      valueGetter: (value) => value || '—',
     },
     {
       field: 'status',
@@ -119,7 +122,7 @@ export const AgendaManagementPage = () => {
         title="Agenda Items"
         breadcrumbs={[{ label: 'Agenda Items' }]}
         actions={
-          isWingMember && (
+          canCreateAgendaItem && (
             <Button variant="contained" startIcon={<AddIcon />} onClick={() => navigate('/agenda/create')}>
               New Item
             </Button>
@@ -191,7 +194,7 @@ export const AgendaManagementPage = () => {
                         {row.topic}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {row.wing?.name || '—'} · {row.created_at ? format(new Date(row.created_at), 'dd MMM yyyy') : '—'}
+                        {row.wing_name || '—'} · {row.created_at ? format(new Date(row.created_at), 'dd MMM yyyy') : '—'}
                       </Typography>
                     </CardContent>
                   </CardActionArea>

@@ -25,11 +25,22 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.0);
+  const [objectUrl, setObjectUrl] = useState(null);
 
-  const { data: streamData, isLoading } = useGetAttachmentStreamQuery(
+  const { data: blob, isLoading } = useGetAttachmentStreamQuery(
     { agendaItemId, attachmentId: attachment?.id },
     { skip: !open || !attachment?.id || !agendaItemId }
   );
+
+  useEffect(() => {
+    if (blob instanceof Blob) {
+      const url = URL.createObjectURL(blob);
+      setObjectUrl(url);
+      return () => URL.revokeObjectURL(url);
+    } else {
+      setObjectUrl(null);
+    }
+  }, [blob]);
 
   useEffect(() => {
     if (open) {
@@ -40,7 +51,9 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
 
   if (!open) return null;
 
-  const pdfUrl = streamData?.url || (typeof streamData === 'string' ? streamData : null);
+  const mimeType = attachment?.mime_type || '';
+  const isImage = mimeType.startsWith('image/');
+  const fileUrl = objectUrl;
 
   const handleZoomIn = () => setScale((s) => Math.min(s + 0.25, 3.0));
   const handleZoomOut = () => setScale((s) => Math.max(s - 0.25, 0.5));
@@ -78,25 +91,27 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
         <Typography variant="body2" fontWeight={600} sx={{ flex: 1 }} noWrap>
           {attachment?.friendly_name || 'Document'}
         </Typography>
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-          <Tooltip title="Previous page">
-            <span>
-              <IconButton size="small" onClick={handlePrev} disabled={currentPage <= 1}>
-                <NavigateBeforeIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-          <Typography variant="caption" sx={{ minWidth: 60, textAlign: 'center' }}>
-            {numPages ? `${currentPage} / ${numPages}` : '—'}
-          </Typography>
-          <Tooltip title="Next page">
-            <span>
-              <IconButton size="small" onClick={handleNext} disabled={!numPages || currentPage >= numPages}>
-                <NavigateNextIcon fontSize="small" />
-              </IconButton>
-            </span>
-          </Tooltip>
-        </Box>
+        {!isImage && (
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+            <Tooltip title="Previous page">
+              <span>
+                <IconButton size="small" onClick={handlePrev} disabled={currentPage <= 1}>
+                  <NavigateBeforeIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+            <Typography variant="caption" sx={{ minWidth: 60, textAlign: 'center' }}>
+              {numPages ? `${currentPage} / ${numPages}` : '—'}
+            </Typography>
+            <Tooltip title="Next page">
+              <span>
+                <IconButton size="small" onClick={handleNext} disabled={!numPages || currentPage >= numPages}>
+                  <NavigateNextIcon fontSize="small" />
+                </IconButton>
+              </span>
+            </Tooltip>
+          </Box>
+        )}
         <Tooltip title="Zoom out">
           <IconButton size="small" onClick={handleZoomOut} disabled={scale <= 0.5}>
             <ZoomOutIcon fontSize="small" />
@@ -122,10 +137,19 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
             <CircularProgress sx={{ color: '#fff' }} />
           </Box>
         )}
-        {!isLoading && pdfUrl && (
+        {!isLoading && fileUrl && isImage && (
+          <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+            <img
+              src={fileUrl}
+              alt={attachment?.friendly_name || 'attachment'}
+              style={{ maxWidth: '100%', borderRadius: 4 }}
+            />
+          </Box>
+        )}
+        {!isLoading && fileUrl && !isImage && (
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <Document
-              file={pdfUrl}
+              file={fileUrl}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
               loading={
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -147,7 +171,7 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
             </Document>
           </Box>
         )}
-        {!isLoading && !pdfUrl && (
+        {!isLoading && !fileUrl && (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
               No preview available

@@ -198,7 +198,7 @@ export const AgendaDetailPage = () => {
               {/* Base fields */}
               {visibleFields.includes(FIELD_GROUPS.BASE) && (
                 <>
-                  <FieldRow label="Wing" value={item.wing?.name} />
+                  <FieldRow label="Wing" value={item.wing_name} />
                   <FieldRow label="File Number" value={item.file_number} />
                   <FieldRow label="Created" value={item.created_at ? format(new Date(item.created_at), 'dd MMM yyyy') : null} />
                   <FieldRow label="Submitted" value={item.submitted_at ? format(new Date(item.submitted_at), 'dd MMM yyyy') : null} />
@@ -208,21 +208,46 @@ export const AgendaDetailPage = () => {
               {/* Wing content fields */}
               {visibleFields.includes(FIELD_GROUPS.WING_CONTENT) && (
                 <>
-                  {item.description && (
+                  {/* Dynamic form_data fields (new form-template based content) */}
+                  {item.form_data && Object.keys(item.form_data).length > 0 && (
                     <Box sx={{ mt: 2.5 }}>
-                      <Typography variant="h5" gutterBottom>Description</Typography>
-                      <Typography variant="body2" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                        {item.description}
-                      </Typography>
+                      <Typography variant="h5" gutterBottom>Content</Typography>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                        {Object.entries(item.form_data).map(([key, value]) =>
+                          value !== '' && value !== null && value !== undefined ? (
+                            <Box key={key}>
+                              <Typography variant="caption" color="text.secondary" fontWeight={600} sx={{ textTransform: 'capitalize' }}>
+                                {key.replace(/_/g, ' ')}
+                              </Typography>
+                              <Typography variant="body2" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap', mt: 0.25 }}>
+                                {value}
+                              </Typography>
+                            </Box>
+                          ) : null
+                        )}
+                      </Box>
                     </Box>
                   )}
-                  {item.discussion_points && (
-                    <Box sx={{ mt: 2.5 }}>
-                      <Typography variant="h5" gutterBottom>Discussion Points</Typography>
-                      <Typography variant="body2" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
-                        {item.discussion_points}
-                      </Typography>
-                    </Box>
+                  {/* Legacy plain-text fields (backward compatibility) */}
+                  {(!item.form_data || Object.keys(item.form_data).length === 0) && (
+                    <>
+                      {item.description && (
+                        <Box sx={{ mt: 2.5 }}>
+                          <Typography variant="h5" gutterBottom>Description</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                            {item.description}
+                          </Typography>
+                        </Box>
+                      )}
+                      {item.discussion_points && (
+                        <Box sx={{ mt: 2.5 }}>
+                          <Typography variant="h5" gutterBottom>Discussion Points</Typography>
+                          <Typography variant="body2" sx={{ lineHeight: 1.8, whiteSpace: 'pre-wrap' }}>
+                            {item.discussion_points}
+                          </Typography>
+                        </Box>
+                      )}
+                    </>
                   )}
                 </>
               )}
@@ -299,7 +324,7 @@ export const AgendaDetailPage = () => {
               <CardContent>
                 <Typography variant="h5" gutterBottom>Admin Details</Typography>
                 <FieldRow label="Priority" value={item.priority} />
-                <FieldRow label="Meeting" value={item.meeting?.title} />
+                <FieldRow label="Meeting" value={item.meeting_title} />
               </CardContent>
             </Card>
           )}
@@ -362,12 +387,12 @@ export const AgendaDetailPage = () => {
             </Card>
           )}
 
-          {/* Approval history — backend serializes as `approvals` (AgendaApproval related set) */}
-          {item.approvals && item.approvals.length > 0 && (
+          {/* Approval history — backend serializes as `approval_history` */}
+          {item.approval_history && item.approval_history.length > 0 && (
             <Card>
               <CardContent>
                 <Typography variant="h5" gutterBottom>Approval History</Typography>
-                <ApprovalHistory history={item.approvals} />
+                <ApprovalHistory history={item.approval_history} />
               </CardContent>
             </Card>
           )}

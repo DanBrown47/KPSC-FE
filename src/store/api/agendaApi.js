@@ -106,8 +106,10 @@ export const agendaApi = createApi({
       invalidatesTags: (result, error, { agendaItemId }) => [{ type: 'Attachment', id: agendaItemId }],
     }),
     getAttachmentStream: builder.query({
-      query: ({ agendaItemId, attachmentId }) =>
-        `agenda/${agendaItemId}/attachments/${attachmentId}/stream/`,
+      query: ({ agendaItemId, attachmentId }) => ({
+        url: `agenda/${agendaItemId}/attachments/${attachmentId}/stream/`,
+        responseHandler: (response) => response.blob(),
+      }),
     }),
     getReferenceNotes: builder.query({
       query: ({ agendaItemId, attachmentId }) =>
@@ -121,6 +123,12 @@ export const agendaApi = createApi({
         body: { content },
       }),
       invalidatesTags: (result, error, { attachmentId }) => [{ type: 'ReferenceNote', id: attachmentId }],
+    }),
+    getNextFileNumber: builder.query({
+      query: ({ wingId, prefix }) => ({
+        url: 'agenda/next-file-number/',
+        params: { wing: wingId, prefix },
+      }),
     }),
   }),
 });
@@ -146,4 +154,5 @@ export const {
   useGetAttachmentStreamQuery,
   useGetReferenceNotesQuery,
   useCreateReferenceNoteMutation,
+  useLazyGetNextFileNumberQuery,
 } = agendaApi;
