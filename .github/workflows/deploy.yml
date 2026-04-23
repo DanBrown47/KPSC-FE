@@ -5,6 +5,8 @@ on:
     branches: ["main"]
 
 env:
+  # This env var only affects the GitHub runner itself, 
+  # not your remote server, but it's fine to keep.
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
@@ -26,19 +28,30 @@ jobs:
           script: |
             set -e
 
+            # 1. Manually load NVM so the shell knows where Node 20 is
+            export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+            # 2. Tell the shell to use the version you installed
+            nvm use 20
+            
+            # Print version to the log for peace of mind
+            echo "Using Node version: $(node -v)"
+
             cd /home/pmdweb/psc/frontend
             git pull origin main
 
-            # Build
+            # 3. Install and Build
             npm install --legacy-peer-deps
             npm run build
 
-            # Clean target safely
+            # 4. Deploy to web directory
+            # Using SERVER_PASSWORD for sudo authorization
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S mkdir -p /var/www/psc/frontend
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S rm -rf /var/www/psc/frontend/*
 
-            # Copy build
-            echo "${{ secrets.SSERVER_PASSWORD }}" | sudo -S cp -r dist/* /var/www/psc/frontend/
+            # 5. Copy built files from the local dist folder to the web root
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S cp -r dist/* /var/www/psc/frontend/
 
-            # Reload nginx
+            # 6. Reload Nginx to serve the new files
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl reload nginx
