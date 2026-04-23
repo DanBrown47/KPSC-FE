@@ -1,23 +1,67 @@
 import { createSlice } from '@reduxjs/toolkit';
 
-// Derive menu permissions from global_role (no backend endpoint needed)
+// Roles whose sidebar permissions are driven by wing-level UserPermissionRole assignments,
+// not by global_role alone. Any role in this set must have an active wing with explicit
+// permission_roles for the sidebar to show agenda/approval tabs.
+const WING_SCOPED_ROLES = new Set([
+  'WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'CA', 'RA_WING',
+]);
+
+// Backend permission_role values that grant agenda list/detail access
+const AGENDA_VIEW_PERMS = new Set([
+  'agenda_item_view', 'agenda_item_create', 'agenda_item_edit',
+  'agenda_item_delete', 'final_agenda_view',
+]);
+
+// Derive menu permissions from user data.
+// For wing-scoped roles, permissions are read from the active wing's permission_roles
+// so that a user with zero permissions in a wing sees no tabs for that wing.
 export const deriveMenuPermissions = (user) => {
   if (!user) return null;
   const role = user.global_role;
-  const agendaRoles = ['WING_MEMBER', 'WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'RNA_ASJS', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA', 'CA', 'RA_WING'];
-  const wingRoles = ['WING_AS', 'WING_JS', 'WING_ASJS', 'WING_MEMBER', 'WING_HEAD', 'CA', 'RA_WING', 'RNA_ASJS'];
-  // wing_switcher: visible when user has multiple wing assignments (derived at runtime from wing_roles length)
-  const hasMultipleWings = Array.isArray(user.wing_roles) && user.wing_roles.filter((r) => r.is_active).length > 1;
+  const activeWingRoles = (user.wing_roles || []).filter((r) => r.is_active !== false);
+  const hasMultipleWings = activeWingRoles.length > 1;
+
+  if (WING_SCOPED_ROLES.has(role)) {
+    const activeWingId = user.active_wing_id;
+    // Fall back to single wing when active_wing is not explicitly set
+    const effectiveWingId = activeWingId ?? (activeWingRoles.length === 1 ? activeWingRoles[0].wing : null);
+    const activeWingRole = effectiveWingId
+      ? activeWingRoles.find((r) => Number(r.wing) === Number(effectiveWingId))
+      : null;
+
+    const wingPerms = new Set((activeWingRole?.permission_roles || []).map((p) => p.permission_role));
+    const agendaViewer = [...AGENDA_VIEW_PERMS].some((p) => wingPerms.has(p));
+    const canApprove = wingPerms.has('approve_agenda_item');
+    // Show meetings/calendar only when user can do something agenda-related
+    const meetingViewer = agendaViewer || wingPerms.has('meeting_convener');
+
+    return {
+      meeting_viewer: meetingViewer,
+      agenda_viewer: agendaViewer,
+      approver: canApprove,
+      consolidator: false,
+      report_viewer: false,
+      user_manager: false,
+      config_manager: false,
+      audit_viewer: false,
+      wing_switcher: hasMultipleWings,
+    };
+  }
+
+  // Non-wing-scoped global roles use role-based permissions
+  const agendaRoles = ['RNA_ASJS', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA'];
+  const wingSwitcherRoles = new Set(['RNA_ASJS']);
   return {
     meeting_viewer: role !== 'WEB_ADMIN',
     agenda_viewer: agendaRoles.includes(role),
-    approver: ['WING_ASJS', 'WING_AS', 'WING_JS', 'WING_HEAD', 'RNA_ASJS'].includes(role),
+    approver: role === 'RNA_ASJS',
     consolidator: role === 'RNA_ASJS',
     report_viewer: ['CHAIRMAN_PS', 'RNA_ASJS', 'CHAIRMAN', 'SECRETARY'].includes(role),
     user_manager: role === 'WEB_ADMIN',
     config_manager: role === 'WEB_ADMIN',
     audit_viewer: ['WEB_ADMIN', 'CHAIRMAN_PS'].includes(role),
-    wing_switcher: wingRoles.includes(role) && hasMultipleWings,
+    wing_switcher: wingSwitcherRoles.has(role) && hasMultipleWings,
   };
 };
 
@@ -75,9 +119,9 @@ export const selectIsAuthenticated = (state) => !!state.auth.token;
 export const selectCurrentUser = (state) => state.auth.user;
 // global_role is a top-level field on UserProfile serializer
 export const selectGlobalRole = (state) => state.auth.user?.global_role;
-// If no stored menuPermissions, derive from user role
-export const selectMenuPermissions = (state) =>
-  state.auth.menuPermissions ?? deriveMenuPermissions(state.auth.user);
+// Always derive fresh from user data so wing-scoped permission changes take effect immediately.
+// Stale cached menuPermissions in localStorage are intentionally ignored.
+export const selectMenuPermissions = (state) => deriveMenuPermissions(state.auth.user);
 export const selectToken = (state) => state.auth.token;
 
 export default authSlice.reducer;
