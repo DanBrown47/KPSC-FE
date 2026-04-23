@@ -38,7 +38,7 @@ jobs:
             echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S rm -rf /var/www/psc/frontend/*
 
             # Copy build
-            echo "${{ secrets.SERVER_PASS }}" | sudo -S cp -r dist/* /var/www/psc/frontend/
+            echo "${{ secrets.SSERVER_PASSWORD }}" | sudo -S cp -r dist/* /var/www/psc/frontend/
 
             # Reload nginx
-            echo "${{ secrets.SERVER_PASS }}" | sudo -S systemctl reload nginx
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S systemctl reload nginx
