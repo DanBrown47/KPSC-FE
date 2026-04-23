@@ -4,9 +4,13 @@ on:
   push:
     branches: ["main"]
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -16,24 +20,25 @@ jobs:
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
-          password: ${{ secrets.SERVER_PASS }} # Use password instead of key
-          port: ${{ secrets.SERVER_PORT }}     # Your custom port
-          script_stop: true                    # Stops the job if a command fails
+          password: ${{ secrets.SERVER_PASS }}
+          port: ${{ secrets.SERVER_PORT }}
+          script_stop: true
           script: |
+            set -e
+
             cd /home/pmdweb/psc/frontend
             git pull origin main
 
-
-            #_____________FRONTEND BUILD AND DEPLOYMENT_____________#
+            # Build
             npm install
             npm run build
 
-            #remove old dist files
-            cd /var/www/psc/frontend
-            echo "${{ secrets.SERVER_PASS }}" | sudo -S rm -rf *
+            # Clean target safely
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S mkdir -p /var/www/psc/frontend
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S rm -rf /var/www/psc/frontend/*
 
-            #copy new dist files
-            echo "${{ secrets.SERVER_PASS }}" | sudo -S cp -r /home/pmdweb/psc/frontend/dist/* /var/www/psc/frontend/
+            # Copy build
+            echo "${{ secrets.SERVER_PASS }}" | sudo -S cp -r dist/* /var/www/psc/frontend/
 
-            # Restart the server
+            # Reload nginx
             echo "${{ secrets.SERVER_PASS }}" | sudo -S systemctl reload nginx
