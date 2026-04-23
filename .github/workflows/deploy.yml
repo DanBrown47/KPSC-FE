@@ -30,12 +30,12 @@ jobs:
             git pull origin main
 
             # Build
-            npm install
+            npm install --legacy-peer-deps
             npm run build
 
             # Clean target safely
-            echo "${{ secrets.SERVER_PASS }}" | sudo -S mkdir -p /var/www/psc/frontend
-            echo "${{ secrets.SERVER_PASS }}" | sudo -S rm -rf /var/www/psc/frontend/*
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S mkdir -p /var/www/psc/frontend
+            echo "${{ secrets.SERVER_PASSWORD }}" | sudo -S rm -rf /var/www/psc/frontend/*
 
             # Copy build
             echo "${{ secrets.SERVER_PASS }}" | sudo -S cp -r dist/* /var/www/psc/frontend/
