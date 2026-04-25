@@ -159,7 +159,7 @@ export const CreateAgendaPage = () => {
 
   // Sync derived file_number into form whenever prefix/number parts change
   useEffect(() => {
-    const derived = selectedPrefix
+    const derived = selectedPrefix && fileNumPart
       ? `${selectedPrefix}/${fileNumPart}`
       : fileNumPart;
     setForm(p => ({ ...p, file_number: derived }));
@@ -230,7 +230,6 @@ export const CreateAgendaPage = () => {
   const validateStep = (step) => {
     const errs = {};
     if (step === 0) {
-      if (!form.topic.trim()) errs.topic = 'Topic is required';
       if (!form.wing) errs.wing = 'Wing is required';
       if (!form.meeting) errs.meeting = 'Meeting is required';
       if (!form.agenda_form) errs.agenda_form = 'Agenda form is required';
@@ -248,7 +247,7 @@ export const CreateAgendaPage = () => {
   const handleNext = async () => {
     if (!validateStep(activeStep)) return;
 
-    if (activeStep === 0 && !savedItemId) {
+    if (activeStep === 1 && !savedItemId) {
       try {
         const result = await createAgendaItem(form).unwrap();
         setSavedItemId(result.id);
@@ -362,18 +361,6 @@ export const CreateAgendaPage = () => {
                 </Alert>
               )}
 
-              <TextField
-                fullWidth
-                label="Topic"
-                value={form.topic}
-                onChange={handleField('topic')}
-                error={!!errors.topic}
-                helperText={errors.topic}
-                required
-                placeholder="Briefly describe the agenda item..."
-                disabled={!form.meeting}
-              />
-
               {/* Wing — locked to active wing for wing-scoped users */}
               <TextField
                 select
@@ -411,6 +398,26 @@ export const CreateAgendaPage = () => {
                 ))}
               </TextField>
 
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={form.is_supplementary}
+                    onChange={handleField('is_supplementary')}
+                    disabled={!form.meeting || selectedMeetingStatus === 'FINALIZED'}
+                  />
+                }
+                label={
+                  selectedMeetingStatus === 'FINALIZED'
+                    ? 'Supplementary agenda item (required for finalized meetings)'
+                    : 'This is a supplementary agenda item'
+                }
+              />
+            </Box>
+          )}
+
+          {/* Step 2: Content — dynamic per agenda form */}
+          {activeStep === 1 && (
+            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {/* File Number — with prefix support */}
               {hasMultiplePrefixes ? (
                 <Box sx={{ display: 'flex', gap: 1.5 }}>
@@ -454,26 +461,6 @@ export const CreateAgendaPage = () => {
                 />
               )}
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={form.is_supplementary}
-                    onChange={handleField('is_supplementary')}
-                    disabled={!form.meeting || selectedMeetingStatus === 'FINALIZED'}
-                  />
-                }
-                label={
-                  selectedMeetingStatus === 'FINALIZED'
-                    ? 'Supplementary agenda item (required for finalized meetings)'
-                    : 'This is a supplementary agenda item'
-                }
-              />
-            </Box>
-          )}
-
-          {/* Step 2: Content — dynamic per agenda form */}
-          {activeStep === 1 && (
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
               {selectedFormFields.length === 0 ? (
                 <Alert severity="warning">
                   No fields configured for this agenda form. Please contact your administrator.
