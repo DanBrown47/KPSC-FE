@@ -31,9 +31,9 @@ const PAGE_TITLES = {
   '/consolidation': 'Consolidation',
   '/reports': 'Reports',
   '/my-wings': 'My Wings',
-  '/admin/users': 'User Management',
-  '/admin/wings': 'Wing Configuration',
-  '/admin/audit': 'Audit Log',
+  '/webadmin/users': 'User Management',
+  '/webadmin/wings': 'Wing Configuration',
+  '/webadmin/audit': 'Audit Log',
 };
 
 const getInitials = (user) => {

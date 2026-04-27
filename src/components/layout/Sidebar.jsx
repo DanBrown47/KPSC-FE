@@ -32,9 +32,9 @@ const ALL_NAV_ITEMS = [
   { key: 'reports', label: 'Reports', path: '/reports', icon: BarChartIcon, permission: 'report_viewer' },
   { key: 'my_wings', label: 'My Wings', path: '/my-wings', icon: SwapHorizIcon, permission: 'wing_switcher' },
   { divider: true },
-  { key: 'admin_users', label: 'User Management', path: '/admin/users', icon: PeopleIcon, permission: 'user_manager' },
-  { key: 'admin_wings', label: 'Wing Config', path: '/admin/wings', icon: AccountTreeIcon, permission: 'config_manager' },
-  { key: 'admin_audit', label: 'Audit Log', path: '/admin/audit', icon: ManageSearchIcon, permission: 'audit_viewer' },
+  { key: 'admin_users', label: 'User Management', path: '/webadmin/users', icon: PeopleIcon, permission: 'user_manager' },
+  { key: 'admin_wings', label: 'Wing Config', path: '/webadmin/wings', icon: AccountTreeIcon, permission: 'config_manager' },
+  { key: 'admin_audit', label: 'Audit Log', path: '/webadmin/audit', icon: ManageSearchIcon, permission: 'audit_viewer' },
 ];
 
 export const Sidebar = () => {

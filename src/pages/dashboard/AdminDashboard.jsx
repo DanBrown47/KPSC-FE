@@ -38,7 +38,7 @@ export const AdminDashboard = () => {
             icon={PeopleIcon}
             title="User Management"
             description="Manage user accounts and role assignments."
-            path="/admin/users"
+            path="/webadmin/users"
             color="#1A4480"
           />
         </Grid>
@@ -47,7 +47,7 @@ export const AdminDashboard = () => {
             icon={AccountTreeIcon}
             title="Wing Configuration"
             description="Configure wing priorities and approval chains."
-            path="/admin/wings"
+            path="/webadmin/wings"
             color="#7C3AED"
           />
         </Grid>
@@ -56,7 +56,7 @@ export const AdminDashboard = () => {
             icon={ManageSearchIcon}
             title="Audit Log"
             description="Review all system activity and user actions."
-            path="/admin/audit"
+            path="/webadmin/audit"
             color="#059669"
           />
         </Grid>

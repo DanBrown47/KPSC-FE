@@ -71,9 +71,9 @@ function App() {
         {/* Wing Marketplace */}
         <Route path="my-wings" element={<WingMarketplacePage />} />
 
-        {/* Admin */}
+        {/* Admin — /webadmin/* avoids conflict with Django's /admin/ path */}
         <Route
-          path="admin/users"
+          path="webadmin/users"
           element={
             <ProtectedRoute requiredPermission="user_manager">
               <UserManagementPage />
@@ -81,14 +81,14 @@ function App() {
           }
         />
         <Route
-          path="admin/wings"
+          path="webadmin/wings"
           element={
             <ProtectedRoute requiredPermission="config_manager">
               <WingConfigPage />
             </ProtectedRoute>
           }
         />
-        <Route path="admin/audit" element={<AuditLogPage />} />
+        <Route path="webadmin/audit" element={<AuditLogPage />} />
 
         {/* Reports */}
         <Route path="reports" element={<ReportsPage />} />

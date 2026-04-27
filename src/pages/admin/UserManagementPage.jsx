@@ -154,7 +154,7 @@ const WingAssignmentsTab = ({ userId, globalRole }) => {
 
 const WingPermissionSection = ({ wingRole }) => {
   const dispatch = useDispatch();
-  const { data: permRolesData = [] } = useGetPermissionRolesQuery(wingRole.id);
+  const { data: permRolesData = [], isLoading: permsLoading } = useGetPermissionRolesQuery(wingRole.id);
   const [addPermRole] = useAddPermissionRoleMutation();
   const [removePermRole] = useRemovePermissionRoleMutation();
 
@@ -194,6 +194,7 @@ const WingPermissionSection = ({ wingRole }) => {
                 size="small"
                 checked={enabledPerms.has(p.value)}
                 onChange={(e) => handleToggle(p.value, e.target.checked)}
+                disabled={permsLoading}
               />
             }
             label={<Typography variant="body2">{p.label}</Typography>}
