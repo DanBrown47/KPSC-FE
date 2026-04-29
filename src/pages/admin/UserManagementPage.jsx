@@ -250,19 +250,20 @@ const initForm = (u) => u ? {
   email: u.email || u.user?.email || '',
   global_role: u.global_role || 'WING_AS',
   phone: u.phone || '',
-  designation: u.designation || '',
   password: '',
   corresponding_user: u.corresponding_user_id || '',
-} : { username: '', email: '', first_name: '', last_name: '', global_role: 'WING_AS', password: '', phone: '', designation: '', corresponding_user: '' };
+} : { username: '', email: '', first_name: '', last_name: '', global_role: 'WING_AS', password: '', phone: '', corresponding_user: '' };
 
 const UserDrawer = ({ open, user, onClose, onSave }) => {
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState(initForm(user));
+  const [phoneError, setPhoneError] = useState('');
 
   useEffect(() => {
     if (open) {
       setForm(initForm(user));
       setTab(0);
+      setPhoneError('');
     }
   }, [user, open]);
 
@@ -324,8 +325,22 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
                 ))}
               </TextField>
             )}
-            <TextField label="Phone" value={form.phone} onChange={handleField('phone')} />
-            <TextField label="Designation" value={form.designation} onChange={handleField('designation')} />
+            <TextField
+              label="Phone"
+              value={form.phone}
+              onChange={(e) => {
+                handleField('phone')(e);
+                const val = e.target.value;
+                if (val && !/^\d{10}$/.test(val)) {
+                  setPhoneError('Phone number must be exactly 10 digits');
+                } else {
+                  setPhoneError('');
+                }
+              }}
+              error={!!phoneError}
+              helperText={phoneError}
+              inputProps={{ maxLength: 10 }}
+            />
             {isNew && (
               <TextField label="Password" type="password" value={form.password} onChange={handleField('password')} required />
             )}
@@ -344,7 +359,7 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
         <Box sx={{ display: 'flex', gap: 1, pt: 2, mt: 'auto', borderTop: '1px solid #E2E8F0' }}>
           <Button variant="outlined" onClick={onClose} fullWidth>Cancel</Button>
           {(isNew || tab === 0) && (
-            <Button variant="contained" onClick={() => onSave(form)} fullWidth>Save</Button>
+            <Button variant="contained" onClick={() => { if (!phoneError) onSave(form); }} fullWidth disabled={!!phoneError}>Save</Button>
           )}
         </Box>
       </Box>

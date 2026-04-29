@@ -72,11 +72,12 @@ export const LoginPage = () => {
       <Card sx={{ width: '100%', maxWidth: 440, boxShadow: '0 25px 50px rgba(0,0,0,0.5)' }}>
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
-            <Typography variant="h4" sx={{ color: '#F0B429', fontWeight: 700, mb: 0.5 }}>
-              KPSC
+            <Box component="img" src="/psc.png" alt="KPSC Logo" sx={{ height: 80, mb: 1.5 }} />
+            <Typography variant="h2" color="text.primary" gutterBottom sx={{ fontWeight: 700 }}>
+              Kerala Public Service Commission
             </Typography>
-            <Typography variant="h2" color="text.primary" gutterBottom>
-              Meeting Management System
+            <Typography variant="subtitle1" color="text.secondary" sx={{ mb: 1 }}>
+              Sitting Management System
             </Typography>
             <Typography variant="body2" color="text.secondary">
               Sign in to your account

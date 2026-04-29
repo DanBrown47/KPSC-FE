@@ -48,7 +48,7 @@ export const CalendarPage = () => {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [createOpen, setCreateOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(null);
-  const [newMeeting, setNewMeeting] = useState({ sittingNumber: '', venue: '', description: '', time: '09:00' });
+  const [newMeeting, setNewMeeting] = useState({ sittingNumber: '', venue: 'Commission Hall', description: '', time: '10:30' });
 
   const { data: meetingsData } = useGetMeetingsQuery({
     month: format(currentDate, 'yyyy-MM'),
@@ -96,7 +96,7 @@ export const CalendarPage = () => {
       }).unwrap();
       dispatch(showToast({ message: 'Meeting scheduled successfully', severity: 'success' }));
       setCreateOpen(false);
-      setNewMeeting({ sittingNumber: '', venue: '', description: '', time: '09:00' });
+      setNewMeeting({ sittingNumber: '', venue: 'Commission Hall', description: '', time: '10:30' });
       navigate(`/meetings/${meeting.id}`);
     } catch {
       dispatch(showToast({ message: 'Failed to schedule meeting', severity: 'error' }));
