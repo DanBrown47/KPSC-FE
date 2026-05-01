@@ -30,7 +30,7 @@ import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 
 const PREDEFINED_ROLES = new Set([
-  'CHAIRMAN', 'CHAIRMAN_PS', 'SECRETARY', 'MEMBER', 'MEMBER_PA', 'SECRETARY_PA',
+  'CHAIRMAN', 'CHAIRMAN_PS', 'SECRETARY', 'MEMBER', 'MEMBER_PA', 'SECRETARY_PA', 'RNA_ASJS',
 ]);
 
 const ROLES = [
@@ -41,6 +41,8 @@ const ROLES = [
   { value: 'MEMBER',       label: 'Members' },
   { value: 'MEMBER_PA',    label: 'PA (Member)' },
   { value: 'SECRETARY_PA', label: 'PA (Secretary)' },
+  { divider: true, label: 'R&A Wing' },
+  { value: 'RNA_ASJS',     label: 'R&A AS/JS' },
   { divider: true, label: 'Wing Roles' },
   { value: 'WING_AS',      label: 'AS' },
   { value: 'WING_JS',      label: 'JS' },
@@ -66,10 +68,6 @@ const PERMISSION_CHOICES = [
   { value: 'final_agenda_view',   label: 'View Final Agenda' },
 ];
 
-const RA_ONLY_PERMISSION_CHOICES = [
-  { value: 'finalize_other_wings_agenda',            label: 'Finalize Other Wings Agenda' },
-  { value: 'add_subsequent_item_to_approved_agenda', label: 'Add Subsequent Item to Approved Agenda' },
-];
 
 const getInitials = (user) => {
   const f = user.user?.first_name?.[0] || user.full_name?.[0] || '';
@@ -178,9 +176,7 @@ const WingPermissionSection = ({ wingRole }) => {
     }
   };
 
-  const visiblePerms = wingRole.wing_code === 'RA'
-    ? [...PERMISSION_CHOICES, ...RA_ONLY_PERMISSION_CHOICES]
-    : PERMISSION_CHOICES;
+  const visiblePerms = PERMISSION_CHOICES;
 
   return (
     <Box sx={{ border: '1px solid #E2E8F0', borderRadius: 1, p: 2 }}>

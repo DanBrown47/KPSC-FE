@@ -74,6 +74,38 @@ export const agendaApi = createApi({
       }),
       invalidatesTags: ['AgendaItem'],
     }),
+    bulkReturnRNA: builder.mutation({
+      query: ({ ids, reason = '' }) => ({
+        url: 'agenda/bulk_return_rna/',
+        method: 'POST',
+        body: { ids, reason },
+      }),
+      invalidatesTags: ['AgendaItem'],
+    }),
+    bulkConsolidate: builder.mutation({
+      query: ({ meetingId, ids }) => ({
+        url: 'agenda/bulk_consolidate/',
+        method: 'POST',
+        body: { meeting_id: meetingId, ids },
+      }),
+      invalidatesTags: ['AgendaItem'],
+    }),
+    bulkConsolidateSupplementary: builder.mutation({
+      query: ({ meetingId, ids }) => ({
+        url: 'agenda/bulk_consolidate_supplementary/',
+        method: 'POST',
+        body: { meeting_id: meetingId, ids },
+      }),
+      invalidatesTags: ['AgendaItem'],
+    }),
+    reindexMeeting: builder.mutation({
+      query: (meetingId) => ({
+        url: 'agenda/reindex_meeting/',
+        method: 'POST',
+        body: { meeting_id: meetingId },
+      }),
+      invalidatesTags: ['AgendaItem'],
+    }),
     getApprovalDocument: builder.query({
       query: (agendaItemId) => `agenda/${agendaItemId}/approval_document/`,
       providesTags: (result, error, agendaItemId) => [{ type: 'AgendaItem', id: agendaItemId }],
@@ -148,6 +180,10 @@ export const {
   useConsolidateMutation,
   useBulkApproveRNAMutation,
   useConsolidateMeetingMutation,
+  useBulkReturnRNAMutation,
+  useBulkConsolidateMutation,
+  useBulkConsolidateSupplementaryMutation,
+  useReindexMeetingMutation,
   useGetAttachmentsQuery,
   useUploadAttachmentMutation,
   useDeleteAttachmentMutation,

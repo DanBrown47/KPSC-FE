@@ -36,6 +36,14 @@ export const meetingsApi = createApi({
     getReportStatus: builder.query({
       query: ({ meetingId, taskId }) => `meetings/${meetingId}/report_status/?task_id=${taskId}`,
     }),
+    toggleSupplementary: builder.mutation({
+      query: ({ meetingId, wingIds, open }) => ({
+        url: `meetings/${meetingId}/toggle_supplementary/`,
+        method: 'POST',
+        body: { wing_ids: wingIds, open },
+      }),
+      invalidatesTags: (result, error, { meetingId }) => [{ type: 'Meeting', id: meetingId }, 'Meeting'],
+    }),
   }),
 });
 
@@ -47,4 +55,5 @@ export const {
   useFinalizeMeetingMutation,
   useGenerateReportMutation,
   useGetReportStatusQuery,
+  useToggleSupplementaryMutation,
 } = meetingsApi;
