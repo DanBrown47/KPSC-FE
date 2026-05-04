@@ -6,7 +6,7 @@ const ROLE_HIERARCHY = {
   CHAIRMAN_PS: 6,
   CHAIRMAN: 5,
   MEMBER: 4,
-  RNA_ASJS: 3,
+  CONSOLIDATOR: 3,
   WING_ASJS: 2,
   WING_AS: 2,
   WING_JS: 2,
@@ -32,7 +32,7 @@ export const usePermissions = () => {
   const canManageUsers = () => isRole('WEB_ADMIN');
   const canConfigureSystem = () => isRole('WEB_ADMIN') || isRole('CHAIRMAN_PS');
   const canConvokeMeetings = () => isRole('CHAIRMAN_PS');
-  const canConsolidate = () => isRole('RNA_ASJS');
+  const canConsolidate = () => isRole('CONSOLIDATOR');
   const canVote = () => isRole('MEMBER') || isRole('CHAIRMAN') || isRole('CHAIRMAN_PS');
 
   const isWingMemberForWing = (wingId) => {
@@ -61,7 +61,7 @@ export const usePermissions = () => {
     isWingASJSForWing,
     isWingMember: isRole('WING_MEMBER'),
     isWingASJS: isRole('WING_ASJS') || isRole('WING_AS') || isRole('WING_JS') || isRole('WING_HEAD'),
-    isRNAASJS: isRole('RNA_ASJS'),
+    isRNAASJS: isRole('CONSOLIDATOR'),
     isChairmanPS: isRole('CHAIRMAN_PS'),
     isChairman: isRole('CHAIRMAN'),
     isMember: isRole('MEMBER'),

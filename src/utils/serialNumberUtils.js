@@ -4,7 +4,7 @@
 export const shouldShowSerialNumber = (item, meeting, currentUser) => {
   if (!item || !currentUser) return false;
 
-  const isRNAASJS = currentUser.global_role === 'RNA_ASJS';
+  const isRNAASJS = currentUser.global_role === 'CONSOLIDATOR';
   const isConsolidating = meeting?.status === 'CONSOLIDATED' || meeting?.status === 'PENDING_RNA';
 
   // RNA ASJS can see serial numbers during consolidation

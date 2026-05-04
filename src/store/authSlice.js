@@ -50,14 +50,14 @@ export const deriveMenuPermissions = (user) => {
   }
 
   // Non-wing-scoped global roles use role-based permissions
-  const agendaRoles = ['RNA_ASJS', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA'];
-  const wingSwitcherRoles = new Set(['RNA_ASJS']);
+  const agendaRoles = ['CONSOLIDATOR', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA'];
+  const wingSwitcherRoles = new Set(['CONSOLIDATOR']);
   return {
     meeting_viewer: role !== 'WEB_ADMIN',
     agenda_viewer: agendaRoles.includes(role),
-    approver: role === 'RNA_ASJS',
-    consolidator: role === 'RNA_ASJS',
-    report_viewer: ['CHAIRMAN_PS', 'RNA_ASJS', 'CHAIRMAN', 'SECRETARY'].includes(role),
+    approver: role === 'CONSOLIDATOR',
+    consolidator: role === 'CONSOLIDATOR',
+    report_viewer: ['CHAIRMAN_PS', 'CONSOLIDATOR', 'CHAIRMAN', 'SECRETARY'].includes(role),
     user_manager: role === 'WEB_ADMIN',
     config_manager: role === 'WEB_ADMIN',
     audit_viewer: ['WEB_ADMIN', 'CHAIRMAN_PS'].includes(role),

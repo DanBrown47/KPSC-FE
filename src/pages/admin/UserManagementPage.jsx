@@ -30,7 +30,7 @@ import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 
 const PREDEFINED_ROLES = new Set([
-  'CHAIRMAN', 'CHAIRMAN_PS', 'SECRETARY', 'MEMBER', 'MEMBER_PA', 'SECRETARY_PA', 'RNA_ASJS',
+  'CHAIRMAN', 'CHAIRMAN_PS', 'SECRETARY', 'MEMBER', 'MEMBER_PA', 'SECRETARY_PA', 'CONSOLIDATOR',
 ]);
 
 const ROLES = [
@@ -41,8 +41,8 @@ const ROLES = [
   { value: 'MEMBER',       label: 'Members' },
   { value: 'MEMBER_PA',    label: 'PA (Member)' },
   { value: 'SECRETARY_PA', label: 'PA (Secretary)' },
-  { divider: true, label: 'R&A Wing' },
-  { value: 'RNA_ASJS',     label: 'R&A AS/JS' },
+  { divider: true, label: 'Consolidator' },
+  { value: 'CONSOLIDATOR', label: 'Consolidator' },
   { divider: true, label: 'Wing Roles' },
   { value: 'WING_AS',      label: 'AS' },
   { value: 'WING_JS',      label: 'JS' },

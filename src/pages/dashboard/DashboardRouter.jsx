@@ -13,7 +13,7 @@ const ROLE_DASHBOARDS = {
   CHAIRMAN_PS: ChairmanPSDashboard,
   CHAIRMAN: ChairmanDashboard,
   MEMBER: MemberDashboard,
-  RNA_ASJS: RNADashboard,
+  CONSOLIDATOR: RNADashboard,
   WING_ASJS: WingASJSDashboard,
   WING_AS: WingASJSDashboard,
   WING_JS: WingASJSDashboard,
