@@ -33,7 +33,7 @@ export const usePermissions = () => {
   const canConfigureSystem = () => isRole('WEB_ADMIN') || isRole('CHAIRMAN_PS');
   const canConvokeMeetings = () => isRole('CHAIRMAN_PS');
   const canConsolidate = () => isRole('CONSOLIDATOR');
-  const canVote = () => isRole('MEMBER') || isRole('CHAIRMAN') || isRole('CHAIRMAN_PS');
+  const canVote = () => isRole('MEMBER') || isRole('CHAIRMAN');
 
   const isWingMemberForWing = (wingId) => {
     const wingRoles = currentUser?.wing_roles || [];

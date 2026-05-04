@@ -108,7 +108,7 @@ const MyVoteSection = ({ item, currentUser }) => {
   );
 };
 
-const VoteCountSection = ({ itemId, isChairman, isChairmanPS }) => {
+const VoteCountSection = ({ itemId, isChairman }) => {
   const { data: votes } = useGetVotesQuery(itemId);
   const dispatch = useDispatch();
   const [chairmanDecision, setChairmanDecision] = useState({ type: '', notes: '' });
@@ -158,7 +158,7 @@ const VoteCountSection = ({ itemId, isChairman, isChairmanPS }) => {
           <Typography variant="caption" sx={{ minWidth: 24, textAlign: 'right' }}>{summary[v.key] || 0}</Typography>
         </Box>
       ))}
-      {isChairmanPS && (
+      {isChairman && (
         <Box sx={{ mt: 2 }}>
           <Typography variant="h5" gutterBottom>Final Decision</Typography>
           <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap', mb: 1.5 }}>
@@ -199,7 +199,7 @@ const VoteCountSection = ({ itemId, isChairman, isChairmanPS }) => {
 export const SittingPage = () => {
   const { meetingId } = useParams();
   const navigate = useNavigate();
-  const { isMember, isChairman, isChairmanPS, currentUser } = usePermissions();
+  const { isMember, isChairman, currentUser } = usePermissions();
 
   const [activeTab, setActiveTab] = useState(0);
   const [selectedItemId, setSelectedItemId] = useState(null);
@@ -363,9 +363,9 @@ export const SittingPage = () => {
               <Divider sx={{ my: 2 }} />
 
               {/* Voting section */}
-              {isMember && <MyVoteSection item={selectedItem} currentUser={currentUser} />}
-              {(isChairman || isChairmanPS) && (
-                <VoteCountSection itemId={selectedItem.id} isChairman={isChairman} isChairmanPS={isChairmanPS} />
+              {(isMember || isChairman) && <MyVoteSection item={selectedItem} currentUser={currentUser} />}
+              {isChairman && (
+                <VoteCountSection itemId={selectedItem.id} isChairman={isChairman} />
               )}
             </>
           )}
