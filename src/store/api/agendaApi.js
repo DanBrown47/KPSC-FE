@@ -162,6 +162,18 @@ export const agendaApi = createApi({
         params: { wing: wingId, prefix },
       }),
     }),
+    getItemAnnotations: builder.query({
+      query: (agendaItemId) => `agenda/${agendaItemId}/annotations/`,
+      providesTags: (result, error, id) => [{ type: 'ReferenceNote', id: `ann-${id}` }],
+    }),
+    createItemAnnotation: builder.mutation({
+      query: ({ agendaItemId, content }) => ({
+        url: `agenda/${agendaItemId}/annotations/`,
+        method: 'POST',
+        body: { content },
+      }),
+      invalidatesTags: (result, error, { agendaItemId }) => [{ type: 'ReferenceNote', id: `ann-${agendaItemId}` }],
+    }),
   }),
 });
 
@@ -191,4 +203,6 @@ export const {
   useGetReferenceNotesQuery,
   useCreateReferenceNoteMutation,
   useLazyGetNextFileNumberQuery,
+  useGetItemAnnotationsQuery,
+  useCreateItemAnnotationMutation,
 } = agendaApi;

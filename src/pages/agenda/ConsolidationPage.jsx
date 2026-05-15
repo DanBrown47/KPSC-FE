@@ -20,6 +20,7 @@ import { StatusChip } from '../../components/common/StatusChip.jsx';
 import { EmptyState } from '../../components/common/EmptyState.jsx';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
+import { format } from 'date-fns';
 import MergeIcon from '@mui/icons-material/Merge';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
@@ -135,7 +136,9 @@ export const ConsolidationPage = () => {
                       <TableRow>
                         <TableCell sx={{ fontWeight: 600 }}>Serial</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>Wing</TableCell>
-                        <TableCell sx={{ fontWeight: 600 }}>Topic</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>File No.</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Subject</TableCell>
+                        <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
                       </TableRow>
                     </TableHead>
@@ -149,7 +152,15 @@ export const ConsolidationPage = () => {
                             <Typography variant="body2">{item.wing?.name || '—'}</Typography>
                           </TableCell>
                           <TableCell>
+                            <Typography variant="body2" color="text.secondary">{item.file_number || '—'}</Typography>
+                          </TableCell>
+                          <TableCell>
                             <Typography variant="body2">{item.topic}</Typography>
+                          </TableCell>
+                          <TableCell>
+                            <Typography variant="body2" color="text.secondary">
+                              {item.submitted_at ? format(new Date(item.submitted_at), 'dd MMM yyyy') : item.created_at ? format(new Date(item.created_at), 'dd MMM yyyy') : '—'}
+                            </Typography>
                           </TableCell>
                           <TableCell>
                             <StatusChip status={item.status} />

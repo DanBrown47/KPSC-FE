@@ -15,7 +15,9 @@ export const ChairmanDashboard = () => {
   const { currentUser } = useAuth();
   const { data: meetingsData, isLoading } = useGetMeetingsQuery({ status: 'FINALIZED', limit: 5 });
   const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
-  const nextMeeting = meetings[0];
+  const now = new Date();
+  const upcomingMeetings = meetings.filter((m) => new Date(m.sitting_date) >= now);
+  const nextMeeting = upcomingMeetings[0];
 
   return (
     <Box>
@@ -45,7 +47,7 @@ export const ChairmanDashboard = () => {
             <CardContent sx={{ py: 2.5 }}>
               <Typography variant="body2" color="text.secondary" gutterBottom>Upcoming Sittings</Typography>
               {isLoading ? <Skeleton width={40} height={40} /> : (
-                <Typography variant="h1" sx={{ color: '#1D4ED8', fontWeight: 700 }}>{meetings.length}</Typography>
+                <Typography variant="h1" sx={{ color: '#1D4ED8', fontWeight: 700 }}>{upcomingMeetings.length}</Typography>
               )}
             </CardContent>
           </Card>

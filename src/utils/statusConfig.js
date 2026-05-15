@@ -18,10 +18,10 @@ export const STATUS_CONFIG = {
     description: 'Approved by wing',
   },
   PENDING_RNA: {
-    label: 'Pending R&A',
+    label: 'Pending Consolidation',
     color: '#7C3AED',
     bgColor: '#F5F3FF',
-    description: 'Awaiting R&A review',
+    description: 'Awaiting R&A consolidation',
   },
   CONSOLIDATED: {
     label: 'Consolidated',

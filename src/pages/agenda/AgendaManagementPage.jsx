@@ -27,7 +27,7 @@ const STATUS_OPTIONS = [
   { value: 'DRAFT', label: 'Draft' },
   { value: 'PENDING_WING_APPROVAL', label: 'Pending Wing Approval' },
   { value: 'WING_APPROVED', label: 'Wing Approved' },
-  { value: 'PENDING_RNA', label: 'Pending R&A' },
+  { value: 'PENDING_RNA', label: 'Pending Consolidation' },
   { value: 'CONSOLIDATED', label: 'Consolidated' },
   { value: 'FINALIZED', label: 'Finalized' },
   { value: 'VOTED', label: 'Voted' },
@@ -60,8 +60,8 @@ export const AgendaManagementPage = () => {
   const columns = [
     {
       field: 'serial_number',
-      headerName: 'Serial No.',
-      width: 110,
+      headerName: 'Sl No.',
+      width: 100,
       renderCell: ({ row }) => {
         const show = shouldShowSerialNumber(row, row.meeting, currentUser);
         return show && row.serial_number ? (
@@ -72,8 +72,20 @@ export const AgendaManagementPage = () => {
       },
     },
     {
+      field: 'agenda_number',
+      headerName: 'Agenda No.',
+      width: 110,
+      valueGetter: (value) => value || '—',
+    },
+    {
+      field: 'wing_name',
+      headerName: 'Wing',
+      width: 140,
+      valueGetter: (value) => value || '—',
+    },
+    {
       field: 'topic',
-      headerName: 'Topic',
+      headerName: 'Subject',
       flex: 2,
       minWidth: 200,
       renderCell: ({ row }) => (
@@ -84,12 +96,6 @@ export const AgendaManagementPage = () => {
           )}
         </Box>
       ),
-    },
-    {
-      field: 'wing_name',
-      headerName: 'Wing',
-      width: 140,
-      valueGetter: (value) => value || '—',
     },
     {
       field: 'status',

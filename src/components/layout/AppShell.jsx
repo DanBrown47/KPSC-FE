@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
 import Box from '@mui/material/Box';
@@ -8,21 +9,28 @@ import { TopBar } from './TopBar.jsx';
 import { ErrorBoundary } from './ErrorBoundary.jsx';
 import { selectToasts, dismissToast } from '../../store/uiSlice.js';
 
+const SIDEBAR_EXPANDED = 240;
+const SIDEBAR_COLLAPSED = 64;
+
 export const AppShell = () => {
   const dispatch = useDispatch();
   const toasts = useSelector(selectToasts);
   const currentToast = toasts[0];
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+
+  const sidebarWidth = sidebarCollapsed ? SIDEBAR_COLLAPSED : SIDEBAR_EXPANDED;
 
   return (
     <Box sx={{ display: 'flex', minHeight: '100vh', bgcolor: 'background.default' }}>
-      <Sidebar />
+      <Sidebar collapsed={sidebarCollapsed} onToggleCollapse={() => setSidebarCollapsed((v) => !v)} />
       <Box
         sx={{
           flex: 1,
-          marginLeft: '240px',
+          marginLeft: `${sidebarWidth}px`,
           display: 'flex',
           flexDirection: 'column',
           minHeight: '100vh',
+          transition: 'margin-left 0.2s ease',
         }}
       >
         <TopBar />

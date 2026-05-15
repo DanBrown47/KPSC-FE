@@ -44,6 +44,22 @@ export const meetingsApi = createApi({
       }),
       invalidatesTags: (result, error, { meetingId }) => [{ type: 'Meeting', id: meetingId }, 'Meeting'],
     }),
+    enableSitting: builder.mutation({
+      query: ({ meetingId, enabled }) => ({
+        url: `meetings/${meetingId}/enable_sitting/`,
+        method: 'POST',
+        body: { enabled },
+      }),
+      invalidatesTags: (result, error, { meetingId }) => [{ type: 'Meeting', id: meetingId }, 'Meeting'],
+    }),
+    enableVoting: builder.mutation({
+      query: ({ meetingId, enabled }) => ({
+        url: `meetings/${meetingId}/enable_voting/`,
+        method: 'POST',
+        body: { enabled },
+      }),
+      invalidatesTags: (result, error, { meetingId }) => [{ type: 'Meeting', id: meetingId }, 'Meeting'],
+    }),
   }),
 });
 
@@ -56,4 +72,6 @@ export const {
   useGenerateReportMutation,
   useGetReportStatusQuery,
   useToggleSupplementaryMutation,
+  useEnableSittingMutation,
+  useEnableVotingMutation,
 } = meetingsApi;

@@ -57,12 +57,15 @@ export const votingApi = createApi({
       invalidatesTags: ['Vote'],
     }),
     submitCommissionDecision: builder.mutation({
-      query: ({ agendaItemId, decision }) => ({
+      query: ({ agendaItemId, commission_decision_text, decision_number }) => ({
         url: `agenda/${agendaItemId}/commission_decision/`,
         method: 'POST',
-        body: { decision },
+        body: { commission_decision_text, decision_number },
       }),
-      invalidatesTags: ['Vote'],
+      invalidatesTags: (result, error, { agendaItemId }) => [
+        { type: 'Vote', id: agendaItemId },
+        'Vote',
+      ],
     }),
   }),
 });
