@@ -58,6 +58,18 @@ export const wingsApi = createApi({
       query: () => 'wings/agenda-forms/',
       providesTags: ['AgendaForm'],
     }),
+    createAgendaForm: builder.mutation({
+      query: (data) => ({ url: 'wings/agenda-forms/', method: 'POST', body: data }),
+      invalidatesTags: ['AgendaForm'],
+    }),
+    updateAgendaForm: builder.mutation({
+      query: ({ id, ...data }) => ({ url: `wings/agenda-forms/${id}/`, method: 'PATCH', body: data }),
+      invalidatesTags: ['AgendaForm'],
+    }),
+    deleteAgendaForm: builder.mutation({
+      query: (id) => ({ url: `wings/agenda-forms/${id}/`, method: 'DELETE' }),
+      invalidatesTags: ['AgendaForm', 'Wing'],
+    }),
     getWingAgendaForms: builder.query({
       query: (wingId) => `wings/${wingId}/agenda-forms/`,
       providesTags: (result, error, wingId) => [{ type: 'WingAgendaForm', id: wingId }],
@@ -85,4 +97,7 @@ export const {
   useGetAgendaFormsQuery,
   useGetWingAgendaFormsQuery,
   useUpdateWingAgendaFormsMutation,
+  useCreateAgendaFormMutation,
+  useUpdateAgendaFormMutation,
+  useDeleteAgendaFormMutation,
 } = wingsApi;

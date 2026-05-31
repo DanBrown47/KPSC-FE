@@ -27,6 +27,7 @@ import { SittingPage } from './pages/sitting/SittingPage.jsx';
 import { UserManagementPage } from './pages/admin/UserManagementPage.jsx';
 import { WingConfigPage } from './pages/admin/WingConfigPage.jsx';
 import { AuditLogPage } from './pages/admin/AuditLogPage.jsx';
+import { AgendaFormsPage } from './pages/admin/AgendaFormsPage.jsx';
 
 // Wings
 import { WingMarketplacePage } from './pages/wings/WingMarketplacePage.jsx';
@@ -89,6 +90,14 @@ function App() {
           }
         />
         <Route path="webadmin/audit" element={<AuditLogPage />} />
+        <Route
+          path="webadmin/agenda-forms"
+          element={
+            <ProtectedRoute requiredPermission="config_manager">
+              <AgendaFormsPage />
+            </ProtectedRoute>
+          }
+        />
 
         {/* Reports */}
         <Route path="reports" element={<ReportsPage />} />

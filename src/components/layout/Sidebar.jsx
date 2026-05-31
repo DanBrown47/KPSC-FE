@@ -18,6 +18,7 @@ import GavelIcon from '@mui/icons-material/Gavel';
 import PeopleIcon from '@mui/icons-material/People';
 import AccountTreeIcon from '@mui/icons-material/AccountTree';
 import SwapHorizIcon from '@mui/icons-material/SwapHoriz';
+import ListAltIcon from '@mui/icons-material/ListAlt';
 import ManageSearchIcon from '@mui/icons-material/ManageSearch';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -37,6 +38,7 @@ const ALL_NAV_ITEMS = [
   { divider: true },
   { key: 'admin_users', label: 'User Management', path: '/webadmin/users', icon: PeopleIcon, permission: 'user_manager' },
   { key: 'admin_wings', label: 'Wing Config', path: '/webadmin/wings', icon: AccountTreeIcon, permission: 'config_manager' },
+  { key: 'admin_agenda_forms', label: 'Agenda Forms', path: '/webadmin/agenda-forms', icon: ListAltIcon, permission: 'config_manager' },
   { key: 'admin_audit', label: 'Audit Log', path: '/webadmin/audit', icon: ManageSearchIcon, permission: 'audit_viewer' },
 ];
 

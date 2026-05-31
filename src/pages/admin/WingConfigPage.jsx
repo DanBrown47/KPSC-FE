@@ -280,7 +280,7 @@ export const WingConfigPage = () => {
   const [createOpen, setCreateOpen] = useState(false);
   const [deleteDialog, setDeleteDialog] = useState({ open: false, wing: null });
 
-  const agendaForms = Array.isArray(agendaFormsData?.results) ? agendaFormsData.results : Array.isArray(agendaFormsData) ? agendaFormsData : [];
+  const agendaForms = (Array.isArray(agendaFormsData?.results) ? agendaFormsData.results : Array.isArray(agendaFormsData) ? agendaFormsData : []).filter((f) => f.is_active);
 
   useEffect(() => {
     if (data) {
