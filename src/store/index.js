@@ -29,6 +29,7 @@ export const store = configureStore({
     getDefaultMiddleware({
       serializableCheck: {
         ignoredActions: ['persist/PERSIST', 'persist/REHYDRATE'],
+        ignoredPaths: ['agendaApi.queries.getAttachmentStream'],
       },
     }).concat(
       authApi.middleware,
