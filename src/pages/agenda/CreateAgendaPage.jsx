@@ -195,7 +195,11 @@ export const CreateAgendaPage = () => {
   };
 
   const handleFormDataChange = (key, value) => {
-    setForm(p => ({ ...p, form_data: { ...p.form_data, [key]: value } }));
+    setForm(p => ({
+      ...p,
+      form_data: { ...p.form_data, [key]: value },
+      ...(key === 'subject' ? { topic: value } : {}),
+    }));
     setIsDirty(true);
   };
 

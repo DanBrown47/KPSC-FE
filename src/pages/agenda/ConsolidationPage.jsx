@@ -149,13 +149,13 @@ export const ConsolidationPage = () => {
                             <Chip label={`#${idx + 1}*`} size="small" variant="outlined" color="primary" />
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2">{item.wing?.name || '—'}</Typography>
+                            <Typography variant="body2">{item.wing_name || item.wing?.name || '—'}</Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2" color="text.secondary">{item.file_number || '—'}</Typography>
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2">{item.topic}</Typography>
+                            <Typography variant="body2">{item.subject || item.topic || '—'}</Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2" color="text.secondary">
