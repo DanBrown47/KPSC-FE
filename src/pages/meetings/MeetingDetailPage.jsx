@@ -26,7 +26,7 @@ const InfoRow = ({ label, value }) => (
     <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140, flexShrink: 0 }}>
       {label}
     </Typography>
-    <Typography variant="body2">{value || '—'}</Typography>
+    <Typography variant="body2" component="span">{value || '—'}</Typography>
   </Box>
 );
 

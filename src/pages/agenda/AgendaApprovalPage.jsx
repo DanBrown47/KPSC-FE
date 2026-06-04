@@ -6,35 +6,27 @@ import CardContent from '@mui/material/CardContent';
 import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import CircularProgress from '@mui/material/CircularProgress';
-import Alert from '@mui/material/Alert';
-import { useGetAgendaItemsQuery, useApproveWingMutation, useReturnFromWingMutation, useReturnFromRNAMutation } from '../../store/api/agendaApi.js';
+import { useGetAgendaItemsQuery, useApproveWingMutation, useReturnFromWingMutation } from '../../store/api/agendaApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
 import { EmptyState } from '../../components/common/EmptyState.jsx';
-import { usePermissions } from '../../hooks/usePermissions.js';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 import Divider from '@mui/material/Divider';
 import Chip from '@mui/material/Chip';
 import PendingActionsIcon from '@mui/icons-material/PendingActions';
-import MergeIcon from '@mui/icons-material/Merge';
 
 export const AgendaApprovalPage = () => {
-  const { isWingASJS, isRNAASJS } = usePermissions();
   const dispatch = useDispatch();
   const navigate = useNavigate();
-  const [returnDialog, setReturnDialog] = useState({ open: false, item: null, type: null });
+  const [returnDialog, setReturnDialog] = useState({ open: false, item: null });
 
-  // RNA_ASJS sees PENDING_RNA items — these are consolidated via ConsolidationPage, not approved here
-  // Wing AS/JS sees PENDING_WING_APPROVAL items for their wing
-  const statusFilter = isRNAASJS ? 'PENDING_RNA' : 'PENDING_WING_APPROVAL';
-  const { data, isLoading } = useGetAgendaItemsQuery({ status: statusFilter, limit: 100 });
+  const { data, isLoading } = useGetAgendaItemsQuery({ status: 'PENDING_WING_APPROVAL', limit: 100 });
   const items = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
 
   const [approveWing] = useApproveWingMutation();
   const [returnFromWing] = useReturnFromWingMutation();
-  const [returnFromRNA] = useReturnFromRNAMutation();
 
   const handleApprove = async (item) => {
     try {
@@ -46,95 +38,18 @@ export const AgendaApprovalPage = () => {
   };
 
   const handleReturn = async (reason) => {
-    const { item, type } = returnDialog;
+    const { item } = returnDialog;
     try {
-      if (type === 'rna') {
-        await returnFromRNA({ id: item.id, reason }).unwrap();
-      } else {
-        await returnFromWing({ id: item.id, reason }).unwrap();
-      }
+      await returnFromWing({ id: item.id, reason }).unwrap();
       dispatch(showToast({ message: 'Item returned with reason', severity: 'info' }));
     } catch {
       dispatch(showToast({ message: 'Failed to return item', severity: 'error' }));
     }
-    setReturnDialog({ open: false, item: null, type: null });
+    setReturnDialog({ open: false, item: null });
   };
 
   if (isLoading) {
     return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
-  }
-
-  // RNA_ASJS: redirect them to Consolidation — no per-item approve needed
-  if (isRNAASJS) {
-    return (
-      <Box>
-        <PageHeader title="R&A Queue" breadcrumbs={[{ label: 'R&A Queue' }]} />
-        {items.length === 0 ? (
-          <EmptyState
-            icon={PendingActionsIcon}
-            title="No items pending R&A"
-            description="All items have been consolidated or the queue is empty."
-          />
-        ) : (
-          <>
-            <Alert severity="info" sx={{ mb: 2 }}>
-              {items.length} item{items.length !== 1 ? 's' : ''} are ready for consolidation.
-              Use the Consolidation page to assign serial numbers and finalize the agenda.
-            </Alert>
-            <Button
-              variant="contained"
-              startIcon={<MergeIcon />}
-              onClick={() => navigate('/agenda/consolidation')}
-              sx={{ mb: 3 }}
-            >
-              Go to Consolidation
-            </Button>
-            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-              {items.map((item) => (
-                <Card key={item.id} variant="outlined">
-                  <CardContent>
-                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                      <Box sx={{ flex: 1 }}>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.5 }}>
-                          <Typography
-                            variant="h5"
-                            sx={{ cursor: 'pointer', '&:hover': { color: 'primary.main' } }}
-                            onClick={() => navigate(`/agenda/${item.id}`)}
-                          >
-                            {item.topic}
-                          </Typography>
-                          <StatusChip status={item.status} />
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {item.wing?.name || '—'} · {item.created_at ? new Date(item.created_at).toLocaleDateString() : '—'}
-                        </Typography>
-                      </Box>
-                      <Button
-                        variant="outlined"
-                        color="error"
-                        size="small"
-                        onClick={() => setReturnDialog({ open: true, item, type: 'rna' })}
-                      >
-                        Return
-                      </Button>
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))}
-            </Box>
-          </>
-        )}
-        <ConfirmDialog
-          open={returnDialog.open}
-          onClose={() => setReturnDialog({ open: false, item: null, type: null })}
-          onConfirm={handleReturn}
-          title="Return to Wing"
-          message={`Return "${returnDialog.item?.topic}" to wing for revision. Please provide a reason.`}
-          variant="destructive"
-          confirmLabel="Return Item"
-        />
-      </Box>
-    );
   }
 
   // Wing AS/JS: approve or return items pending wing approval
@@ -212,7 +127,7 @@ export const AgendaApprovalPage = () => {
                       variant="outlined"
                       color="error"
                       size="small"
-                      onClick={() => setReturnDialog({ open: true, item, type: 'wing' })}
+                      onClick={() => setReturnDialog({ open: true, item })}
                     >
                       Return
                     </Button>
@@ -226,7 +141,7 @@ export const AgendaApprovalPage = () => {
 
       <ConfirmDialog
         open={returnDialog.open}
-        onClose={() => setReturnDialog({ open: false, item: null, type: null })}
+        onClose={() => setReturnDialog({ open: false, item: null })}
         onConfirm={handleReturn}
         title="Return Agenda Item"
         message={`Return "${returnDialog.item?.topic}" for revision. Please provide a reason.`}

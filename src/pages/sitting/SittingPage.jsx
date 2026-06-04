@@ -618,6 +618,11 @@ export const SittingPage = () => {
               #{item.serial_number}
             </Typography>
           )}
+          {item.agenda_number && (
+            <Typography variant="caption" sx={{ fontWeight: 600, color: '#64748B', flexShrink: 0 }}>
+              A{item.agenda_number}
+            </Typography>
+          )}
           {isSupplementary && (
             <Typography variant="caption" sx={{ fontWeight: 700, color: '#7C3AED', flexShrink: 0 }}>S</Typography>
           )}
@@ -681,9 +686,12 @@ export const SittingPage = () => {
             </Box>
           ) : (
             <>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                {showSerial && selectedItem.serial_number && (
-                  <Chip label={`#${selectedItem.serial_number}`} sx={{ bgcolor: '#F0B429', color: '#0F1F3D', fontWeight: 700 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
+                {selectedItem.serial_number && (
+                  <Chip label={`Sl No. ${selectedItem.serial_number}`} sx={{ bgcolor: '#F0B429', color: '#0F1F3D', fontWeight: 700 }} />
+                )}
+                {selectedItem.agenda_number && (
+                  <Chip label={`Agenda No. ${selectedItem.agenda_number}`} variant="outlined" sx={{ fontWeight: 700, borderColor: '#CBD5E1', color: '#475569' }} />
                 )}
                 <Typography variant="h2" sx={{ flex: 1 }}>{selectedItem.topic}</Typography>
                 <StatusChip status={selectedItem.status} />

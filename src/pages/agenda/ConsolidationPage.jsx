@@ -13,11 +13,12 @@ import TableBody from '@mui/material/TableBody';
 import TableCell from '@mui/material/TableCell';
 import TableHead from '@mui/material/TableHead';
 import TableRow from '@mui/material/TableRow';
-import { useGetAgendaItemsQuery, useConsolidateMeetingMutation } from '../../store/api/agendaApi.js';
+import { useGetAgendaItemsQuery, useConsolidateMeetingMutation, useReturnFromRNAMutation } from '../../store/api/agendaApi.js';
 import { useGetMeetingsQuery } from '../../store/api/meetingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
 import { EmptyState } from '../../components/common/EmptyState.jsx';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 import { format } from 'date-fns';
@@ -27,6 +28,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 export const ConsolidationPage = () => {
   const dispatch = useDispatch();
   const [consolidatingMeetingId, setConsolidatingMeetingId] = useState(null);
+  const [returnDialog, setReturnDialog] = useState({ open: false, item: null });
 
   // Fetch PENDING_RNA items across all meetings
   const { data, isLoading } = useGetAgendaItemsQuery({ status: 'PENDING_RNA', limit: 200 });
@@ -37,6 +39,7 @@ export const ConsolidationPage = () => {
   const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
 
   const [consolidateMeeting, { isLoading: consolidating }] = useConsolidateMeetingMutation();
+  const [returnFromRNA] = useReturnFromRNAMutation();
 
   // Group items by meeting, sorted by wing priority_order within each group
   const itemsByMeeting = useMemo(() => {
@@ -56,6 +59,17 @@ export const ConsolidationPage = () => {
   const getMeetingTitle = (meetingId) => {
     const m = meetings.find((m) => String(m.id) === String(meetingId));
     return m?.title || `Meeting #${meetingId}`;
+  };
+
+  const handleReturn = async (reason) => {
+    const { item } = returnDialog;
+    try {
+      await returnFromRNA({ id: item.id, reason }).unwrap();
+      dispatch(showToast({ message: 'Item returned to wing for revision', severity: 'info' }));
+    } catch {
+      dispatch(showToast({ message: 'Failed to return item', severity: 'error' }));
+    }
+    setReturnDialog({ open: false, item: null });
   };
 
   const handleConsolidateAll = async (meetingId) => {
@@ -140,6 +154,7 @@ export const ConsolidationPage = () => {
                         <TableCell sx={{ fontWeight: 600 }}>Subject</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>Date</TableCell>
                         <TableCell sx={{ fontWeight: 600 }}>Status</TableCell>
+                        <TableCell />
                       </TableRow>
                     </TableHead>
                     <TableBody>
@@ -165,6 +180,16 @@ export const ConsolidationPage = () => {
                           <TableCell>
                             <StatusChip status={item.status} />
                           </TableCell>
+                          <TableCell align="right">
+                            <Button
+                              size="small"
+                              variant="outlined"
+                              color="error"
+                              onClick={() => setReturnDialog({ open: true, item })}
+                            >
+                              Return
+                            </Button>
+                          </TableCell>
                         </TableRow>
                       ))}
                     </TableBody>
@@ -178,6 +203,16 @@ export const ConsolidationPage = () => {
           })}
         </Box>
       )}
+
+      <ConfirmDialog
+        open={returnDialog.open}
+        onClose={() => setReturnDialog({ open: false, item: null })}
+        onConfirm={handleReturn}
+        title="Return to Wing"
+        message={`Return "${returnDialog.item?.topic || returnDialog.item?.subject || ''}" to wing for revision. Please provide a reason.`}
+        variant="destructive"
+        confirmLabel="Return Item"
+      />
     </Box>
   );
 };

@@ -143,6 +143,23 @@ export const AgendaDetailPage = () => {
 
   if (!item) return null;
 
+  // Block consolidator from viewing detail pages of wings they don't belong to
+  if (currentUser?.global_role === 'CONSOLIDATOR') {
+    const userWingIds = new Set((currentUser?.wing_roles || []).map((r) => r.wing));
+    const itemWingId = item.wing?.id ?? item.wing;
+    if (!userWingIds.has(itemWingId)) {
+      return (
+        <Box sx={{ mt: 8, textAlign: 'center' }}>
+          <Typography variant="h5" color="text.secondary">Access Restricted</Typography>
+          <Typography variant="body2" color="text.disabled" sx={{ mt: 1 }}>
+            You do not have permission to view the full details of agenda items from other wings.
+          </Typography>
+          <Button sx={{ mt: 3 }} variant="outlined" onClick={() => navigate(-1)}>Go Back</Button>
+        </Box>
+      );
+    }
+  }
+
   const attachmentList = Array.isArray(attachments?.results) ? attachments.results : Array.isArray(attachments) ? attachments : [];
 
   return (
@@ -185,9 +202,12 @@ export const AgendaDetailPage = () => {
         <Grid size={{ xs: 12, md: 8 }}>
           <Card>
             <CardContent sx={{ p: 3 }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2 }}>
-                {showSerial && item.serial_number && (
-                  <Chip label={`#${item.serial_number}`} sx={{ bgcolor: '#F0B429', color: '#0F1F3D', fontWeight: 700 }} />
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
+                {item.serial_number && (
+                  <Chip label={`Sl No. ${item.serial_number}`} sx={{ bgcolor: '#F0B429', color: '#0F1F3D', fontWeight: 700 }} />
+                )}
+                {item.agenda_number && (
+                  <Chip label={`Agenda No. ${item.agenda_number}`} variant="outlined" sx={{ fontWeight: 700, borderColor: '#CBD5E1', color: '#475569' }} />
                 )}
                 {item.is_supplementary && (
                   <Chip label="Supplementary" size="small" sx={{ bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 600 }} />
@@ -198,6 +218,8 @@ export const AgendaDetailPage = () => {
               {/* Base fields */}
               {visibleFields.includes(FIELD_GROUPS.BASE) && (
                 <>
+                  {item.serial_number && <FieldRow label="Serial No." value={item.serial_number} />}
+                  {item.agenda_number && <FieldRow label="Agenda No." value={item.agenda_number} />}
                   <FieldRow label="Wing" value={item.wing_name} />
                   <FieldRow label="File Number" value={item.file_number} />
                   <FieldRow label="Created" value={item.created_at ? format(new Date(item.created_at), 'dd MMM yyyy') : null} />

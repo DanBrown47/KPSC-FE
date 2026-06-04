@@ -55,7 +55,7 @@ export const deriveMenuPermissions = (user) => {
   return {
     meeting_viewer: role !== 'WEB_ADMIN',
     agenda_viewer: agendaRoles.includes(role),
-    approver: role === 'CONSOLIDATOR',
+    approver: false,
     consolidator: role === 'CONSOLIDATOR',
     report_viewer: ['CHAIRMAN_PS', 'CONSOLIDATOR', 'CHAIRMAN', 'SECRETARY'].includes(role),
     user_manager: role === 'WEB_ADMIN',
