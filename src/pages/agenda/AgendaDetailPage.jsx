@@ -56,7 +56,7 @@ export const AgendaDetailPage = () => {
   const [pdfPanel, setPdfPanel] = useState({ open: false, attachment: null });
   const approvalFileRef = useRef(null);
 
-  const { data: item, isLoading } = useGetAgendaItemQuery(id);
+  const { data: item, isLoading } = useGetAgendaItemQuery(id, { refetchOnMountOrArgChange: true });
   const { data: attachments } = useGetAttachmentsQuery(id, { skip: !id });
 
   const [submitItem, { isLoading: submitting }] = useSubmitAgendaItemMutation();

@@ -13,6 +13,11 @@ const ACTION_ICONS = {
   DEFAULT: { Icon: CheckCircleIcon, color: '#6B7280' },
 };
 
+const LEVEL_LABELS = {
+  1: 'Wing Approval',
+  2: 'R&A Consolidation',
+};
+
 export const ApprovalHistory = ({ history = [] }) => {
   if (!history.length) return null;
 
@@ -55,6 +60,11 @@ export const ApprovalHistory = ({ history = [] }) => {
                 <Typography variant="caption" color="text.secondary">
                   {entry.action?.replace(/_/g, ' ').toLowerCase()}
                 </Typography>
+                {entry.approval_level && (
+                  <Typography variant="caption" sx={{ color: '#6B7280', bgcolor: '#F3F4F6', px: 0.75, py: 0.25, borderRadius: 0.5 }}>
+                    {LEVEL_LABELS[entry.approval_level] || `Level ${entry.approval_level}`}
+                  </Typography>
+                )}
               </Box>
               <Typography variant="caption" color="text.disabled">
                 {entry.actioned_at ? format(new Date(entry.actioned_at), 'dd MMM yyyy HH:mm') : '—'}
