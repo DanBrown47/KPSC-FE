@@ -1,4 +1,4 @@
-import { createSlice } from '@reduxjs/toolkit';
+import { createSlice, createSelector } from '@reduxjs/toolkit';
 
 // Roles whose sidebar permissions are driven by wing-level UserPermissionRole assignments,
 // not by global_role alone. Any role in this set must have an active wing with explicit
@@ -121,7 +121,10 @@ export const selectCurrentUser = (state) => state.auth.user;
 export const selectGlobalRole = (state) => state.auth.user?.global_role;
 // Always derive fresh from user data so wing-scoped permission changes take effect immediately.
 // Stale cached menuPermissions in localStorage are intentionally ignored.
-export const selectMenuPermissions = (state) => deriveMenuPermissions(state.auth.user);
+export const selectMenuPermissions = createSelector(
+  (state) => state.auth.user,
+  (user) => deriveMenuPermissions(user)
+);
 export const selectToken = (state) => state.auth.token;
 
 export default authSlice.reducer;
