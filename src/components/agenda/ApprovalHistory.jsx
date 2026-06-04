@@ -50,18 +50,18 @@ export const ApprovalHistory = ({ history = [] }) => {
             <Box>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.25 }}>
                 <Typography variant="body2" fontWeight={600}>
-                  {entry.actor_name || entry.actor?.username || 'Unknown'}
+                  {entry.approved_by_name || 'Unknown'}
                 </Typography>
                 <Typography variant="caption" color="text.secondary">
                   {entry.action?.replace(/_/g, ' ').toLowerCase()}
                 </Typography>
               </Box>
               <Typography variant="caption" color="text.disabled">
-                {entry.timestamp ? format(new Date(entry.timestamp), 'dd MMM yyyy HH:mm') : '—'}
+                {entry.actioned_at ? format(new Date(entry.actioned_at), 'dd MMM yyyy HH:mm') : '—'}
               </Typography>
-              {entry.comment && (
+              {entry.comments && (
                 <Box sx={{ mt: 0.75, p: 1.5, bgcolor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 1 }}>
-                  <Typography variant="caption" sx={{ color: '#78350F' }}>{entry.comment}</Typography>
+                  <Typography variant="caption" sx={{ color: '#78350F' }}>{entry.comments}</Typography>
                 </Box>
               )}
             </Box>
