@@ -32,30 +32,7 @@ export const ChairmanPSDashboard = () => {
           </Button>
         }
       />
-      {nextMeeting && (
-        <Card sx={{ mb: 3, bgcolor: '#F0B429', border: 'none' }}>
-          <CardContent>
-            <Typography variant="caption" sx={{ color: '#78350F', fontWeight: 600, textTransform: 'uppercase', letterSpacing: 0.5 }}>
-              Next Sitting
-            </Typography>
-            <Typography variant="h2" sx={{ color: '#0F1F3D', mt: 0.5 }}>
-              {nextMeeting.title}
-            </Typography>
-            <Typography variant="body2" sx={{ color: '#78350F', mt: 0.5 }}>
-              {nextMeeting.sitting_date ? new Date(nextMeeting.sitting_date).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
-              {nextMeeting.venue ? ` · ${nextMeeting.venue}` : ''}
-            </Typography>
-            <Button
-              variant="contained"
-              size="small"
-              sx={{ mt: 1.5, bgcolor: '#0F1F3D', color: '#fff', '&:hover': { bgcolor: '#1A3158' } }}
-              onClick={() => navigate(`/sitting/${nextMeeting.id}`)}
-            >
-              Open Sitting Room
-            </Button>
-          </CardContent>
-        </Card>
-      )}
+
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 3 }}>
           <Card>
