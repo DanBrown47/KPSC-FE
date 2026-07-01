@@ -9,10 +9,11 @@ import Divider from '@mui/material/Divider';
 import CircularProgress from '@mui/material/CircularProgress';
 import LinearProgress from '@mui/material/LinearProgress';
 import GavelIcon from '@mui/icons-material/Gavel';
+import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DownloadIcon from '@mui/icons-material/Download';
 import AddIcon from '@mui/icons-material/Add';
 import { format } from 'date-fns';
-import { useGetMeetingQuery, useFinalizeMeetingMutation } from '../../store/api/meetingsApi.js';
+import { useGetMeetingQuery, useFinalizeMeetingMutation, useOpenMeetingMutation } from '../../store/api/meetingsApi.js';
 import { useGetAgendaItemsQuery } from '../../store/api/agendaApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
@@ -73,6 +74,7 @@ export const MeetingDetailPage = () => {
   const isWingUser = isWingMember || isWingASJS;
   const { data: meeting, isLoading } = useGetMeetingQuery(id);
   const [finalizeMeeting, { isLoading: finalizing }] = useFinalizeMeetingMutation();
+  const [openMeeting, { isLoading: opening }] = useOpenMeetingMutation();
 
   const handleFinalize = async () => {
     try {
@@ -80,6 +82,15 @@ export const MeetingDetailPage = () => {
       dispatch(showToast({ message: 'Meeting finalized successfully', severity: 'success' }));
     } catch {
       dispatch(showToast({ message: 'Failed to finalize meeting', severity: 'error' }));
+    }
+  };
+
+  const handleOpenMeeting = async () => {
+    try {
+      await openMeeting(id).unwrap();
+      dispatch(showToast({ message: 'Meeting reopened successfully', severity: 'success' }));
+    } catch {
+      dispatch(showToast({ message: 'Failed to reopen meeting', severity: 'error' }));
     }
   };
 
@@ -121,6 +132,17 @@ export const MeetingDetailPage = () => {
                 disabled={finalizing}
               >
                 {finalizing ? 'Finalizing…' : 'Finalize Meeting'}
+              </Button>
+            )}
+            {canFinalize && meeting.status === 'FINALIZED' && (
+              <Button
+                variant="outlined"
+                color="secondary"
+                startIcon={<LockOpenIcon />}
+                onClick={handleOpenMeeting}
+                disabled={opening}
+              >
+                {opening ? 'Opening…' : 'Open Meeting'}
               </Button>
             )}
             {isChairmanPS && meeting.status === 'FINALIZED' && (

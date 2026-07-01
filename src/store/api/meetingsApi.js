@@ -26,6 +26,10 @@ export const meetingsApi = createApi({
       query: (id) => ({ url: `meetings/${id}/finalize/`, method: 'POST' }),
       invalidatesTags: (result, error, id) => [{ type: 'Meeting', id }, 'Meeting', 'AgendaItem'],
     }),
+    openMeeting: builder.mutation({
+      query: (id) => ({ url: `meetings/${id}/open_meeting/`, method: 'POST' }),
+      invalidatesTags: (result, error, id) => [{ type: 'Meeting', id }, 'Meeting', 'AgendaItem'],
+    }),
     generateReport: builder.mutation({
       query: ({ id, reportType }) => ({
         url: `meetings/${id}/generate_report/`,
@@ -69,6 +73,7 @@ export const {
   useCreateMeetingMutation,
   useUpdateMeetingMutation,
   useFinalizeMeetingMutation,
+  useOpenMeetingMutation,
   useGenerateReportMutation,
   useGetReportStatusQuery,
   useToggleSupplementaryMutation,

@@ -18,6 +18,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import WarningIcon from '@mui/icons-material/Warning';
 import InfoIcon from '@mui/icons-material/Info';
 import GavelIcon from '@mui/icons-material/Gavel';
+import MeetingRoomIcon from '@mui/icons-material/MeetingRoom';
 import { formatDistanceToNow } from 'date-fns';
 import { useNotifications } from '../../hooks/useNotifications.js';
 import { useMarkAllReadMutation } from '../../store/api/notificationsApi.js';
@@ -29,16 +30,20 @@ const NOTIFICATION_ICONS = {
   MEETING_SCHEDULED: GavelIcon,
   MEETING_FINALIZED: GavelIcon,
   VOTE_CAST: GavelIcon,
+  SITTING: MeetingRoomIcon,
   DEFAULT: InfoIcon,
 };
 
 const getNotificationPath = (notification) => {
-  const { notification_type, related_object_id } = notification;
-  if (notification_type?.includes('AGENDA') && related_object_id) {
-    return `/agenda/${related_object_id}`;
+  const { notification_type, related_id, related_model } = notification;
+  if (notification_type === 'SITTING' && related_id) {
+    return `/sitting/${related_id}`;
   }
-  if (notification_type?.includes('MEETING') && related_object_id) {
-    return `/meetings/${related_object_id}`;
+  if (notification_type?.includes('AGENDA') && related_id) {
+    return `/agenda/${related_id}`;
+  }
+  if (notification_type?.includes('MEETING') && related_id) {
+    return `/meetings/${related_id}`;
   }
   return '/dashboard';
 };

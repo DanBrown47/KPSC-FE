@@ -22,7 +22,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import DeleteIcon from '@mui/icons-material/Delete';
 import SearchIcon from '@mui/icons-material/Search';
 import ClearIcon from '@mui/icons-material/Clear';
-import { useGetUsersQuery, useCreateUserMutation, useUpdateUserMutation, useDeactivateUserMutation, useActivateUserMutation, useGetWingRolesQuery, useAddWingRoleMutation, useRemoveWingRoleMutation, useGetPermissionRolesQuery, useAddPermissionRoleMutation, useRemovePermissionRoleMutation } from '../../store/api/usersApi.js';
+import { useGetUsersQuery, useCreateUserMutation, useUpdateUserMutation, useDeactivateUserMutation, useActivateUserMutation, useSoftDeleteUserMutation, useGetWingRolesQuery, useAddWingRoleMutation, useRemoveWingRoleMutation, useGetPermissionRolesQuery, useAddPermissionRoleMutation, useRemovePermissionRoleMutation } from '../../store/api/usersApi.js';
 import { useGetWingsQuery } from '../../store/api/wingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
@@ -250,16 +250,18 @@ const initForm = (u) => u ? {
   corresponding_user: u.corresponding_user_id || '',
 } : { username: '', email: '', first_name: '', last_name: '', global_role: 'WING_AS', password: '', phone: '', corresponding_user: '' };
 
-const UserDrawer = ({ open, user, onClose, onSave }) => {
+const UserDrawer = ({ open, user, onClose, onSave, onDeactivate, onActivate, onDelete }) => {
   const [tab, setTab] = useState(0);
   const [form, setForm] = useState(initForm(user));
   const [phoneError, setPhoneError] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState(null);
 
   useEffect(() => {
     if (open) {
       setForm(initForm(user));
       setTab(0);
       setPhoneError('');
+      setConfirmDialog(null);
     }
   }, [user, open]);
 
@@ -352,12 +354,55 @@ const UserDrawer = ({ open, user, onClose, onSave }) => {
             <PermissionRolesTab userId={user.id} globalRole={user.global_role} />
           </Box>
         )}
+        {!isNew && (
+          <Box sx={{ mt: 2, p: 2, border: '1px solid #E2E8F0', borderRadius: 1 }}>
+            <Typography variant="subtitle2" sx={{ mb: 1 }}>Account Status</Typography>
+            <Box sx={{ display: 'flex', gap: 1 }}>
+              <Button
+                variant={user.is_active ? 'outlined' : 'contained'}
+                color={user.is_active ? 'error' : 'success'}
+                size="small"
+                startIcon={user.is_active ? <BlockIcon /> : <CheckCircleIcon />}
+                onClick={() => setConfirmDialog(user.is_active ? 'deactivate' : 'activate')}
+              >
+                {user.is_active ? 'Deactivate' : 'Activate'}
+              </Button>
+              <Button
+                variant="outlined"
+                color="error"
+                size="small"
+                startIcon={<DeleteIcon />}
+                onClick={() => setConfirmDialog('delete')}
+              >
+                Delete
+              </Button>
+            </Box>
+          </Box>
+        )}
         <Box sx={{ display: 'flex', gap: 1, pt: 2, mt: 'auto', borderTop: '1px solid #E2E8F0' }}>
           <Button variant="outlined" onClick={onClose} fullWidth>Cancel</Button>
           {(isNew || tab === 0) && (
             <Button variant="contained" onClick={() => { if (!phoneError) onSave(form); }} fullWidth disabled={!!phoneError}>Save</Button>
           )}
         </Box>
+        {confirmDialog && (
+          <ConfirmDialog
+            open
+            onClose={() => setConfirmDialog(null)}
+            onConfirm={() => {
+              if (confirmDialog === 'deactivate') onDeactivate();
+              else if (confirmDialog === 'activate') onActivate();
+              else if (confirmDialog === 'delete') onDelete();
+              setConfirmDialog(null);
+            }}
+            title={confirmDialog === 'deactivate' ? 'Deactivate User' : confirmDialog === 'activate' ? 'Activate User' : 'Delete User'}
+            message={confirmDialog === 'delete'
+              ? `Are you sure you want to delete ${user?.username}? This user will be marked as deleted and deactivated.`
+              : `Are you sure you want to ${confirmDialog === 'deactivate' ? 'deactivate' : 'activate'} ${user?.username}?`}
+            variant={confirmDialog === 'delete' ? 'destructive' : 'consequential'}
+            confirmLabel={confirmDialog === 'deactivate' ? 'Deactivate' : confirmDialog === 'activate' ? 'Activate' : 'Delete'}
+          />
+        )}
       </Box>
     </Drawer>
   );
@@ -368,8 +413,7 @@ export const UserManagementPage = () => {
   const [paginationModel, setPaginationModel] = useState({ page: 0, pageSize: 20 });
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editUser, setEditUser] = useState(null);
-  const [deactivateDialog, setDeactivateDialog] = useState({ open: false, user: null });
-  const [filters, setFilters] = useState({ search: '', global_role: '', is_active: '' });
+  const [filters, setFilters] = useState({ search: '', global_role: '', is_active: 'true' });
 
   const handleFilterChange = useCallback((field) => (e) => {
     setFilters((prev) => ({ ...prev, [field]: e.target.value }));
@@ -394,6 +438,7 @@ export const UserManagementPage = () => {
   const [updateUser] = useUpdateUserMutation();
   const [deactivateUser] = useDeactivateUserMutation();
   const [activateUser] = useActivateUserMutation();
+  const [softDeleteUser] = useSoftDeleteUserMutation();
 
   const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
   const rowCount = data?.count || rows.length;
@@ -416,19 +461,37 @@ export const UserManagementPage = () => {
     }
   };
 
-  const handleToggleStatus = async (user) => {
+  const handleDeactivate = async () => {
     try {
-      if (user.is_active) {
-        await deactivateUser(user.id).unwrap();
-        dispatch(showToast({ message: 'User deactivated', severity: 'info' }));
-      } else {
-        await activateUser(user.id).unwrap();
-        dispatch(showToast({ message: 'User activated', severity: 'success' }));
-      }
+      await deactivateUser(editUser.id).unwrap();
+      dispatch(showToast({ message: 'User deactivated', severity: 'info' }));
+      setDrawerOpen(false);
+      setEditUser(null);
     } catch {
-      dispatch(showToast({ message: 'Failed to update user status', severity: 'error' }));
+      dispatch(showToast({ message: 'Failed to deactivate user', severity: 'error' }));
     }
-    setDeactivateDialog({ open: false, user: null });
+  };
+
+  const handleActivate = async () => {
+    try {
+      await activateUser(editUser.id).unwrap();
+      dispatch(showToast({ message: 'User activated', severity: 'success' }));
+      setDrawerOpen(false);
+      setEditUser(null);
+    } catch {
+      dispatch(showToast({ message: 'Failed to activate user', severity: 'error' }));
+    }
+  };
+
+  const handleDelete = async () => {
+    try {
+      await softDeleteUser({ id: editUser.id }).unwrap();
+      dispatch(showToast({ message: 'User deleted', severity: 'info' }));
+      setDrawerOpen(false);
+      setEditUser(null);
+    } catch {
+      dispatch(showToast({ message: 'Failed to delete user', severity: 'error' }));
+    }
   };
 
   const columns = [
@@ -507,28 +570,28 @@ export const UserManagementPage = () => {
       field: 'is_active',
       headerName: 'Status',
       width: 100,
-      renderCell: ({ value }) => (
-        <Chip
-          label={value ? 'Active' : 'Inactive'}
-          size="small"
-          sx={{ bgcolor: value ? '#ECFDF5' : '#F3F4F6', color: value ? '#059669' : '#6B7280', fontWeight: 600 }}
-        />
-      ),
+      renderCell: ({ row }) => {
+        if (row.is_deleted) {
+          return <Chip label="Deleted" size="small" sx={{ bgcolor: '#FEF2F2', color: '#DC2626', fontWeight: 600 }} />;
+        }
+        return (
+          <Chip
+            label={row.is_active ? 'Active' : 'Inactive'}
+            size="small"
+            sx={{ bgcolor: row.is_active ? '#ECFDF5' : '#F3F4F6', color: row.is_active ? '#059669' : '#6B7280', fontWeight: 600 }}
+          />
+        );
+      },
     },
     {
       field: 'actions',
       headerName: '',
-      width: 100,
+      width: 60,
       sortable: false,
       renderCell: ({ row }) => (
-        <Box sx={{ display: 'flex', gap: 0.5 }}>
-          <IconButton size="small" onClick={() => { setEditUser(row); setDrawerOpen(true); }}>
-            <EditIcon fontSize="small" />
-          </IconButton>
-          <IconButton size="small" onClick={() => setDeactivateDialog({ open: true, user: row })} color={row.is_active ? 'error' : 'success'}>
-            {row.is_active ? <BlockIcon fontSize="small" /> : <CheckCircleIcon fontSize="small" />}
-          </IconButton>
-        </Box>
+        <IconButton size="small" onClick={() => { setEditUser(row); setDrawerOpen(true); }}>
+          <EditIcon fontSize="small" />
+        </IconButton>
       ),
     },
   ];
@@ -609,15 +672,9 @@ export const UserManagementPage = () => {
         user={editUser}
         onClose={() => { setDrawerOpen(false); setEditUser(null); }}
         onSave={handleSave}
-      />
-      <ConfirmDialog
-        open={deactivateDialog.open}
-        onClose={() => setDeactivateDialog({ open: false, user: null })}
-        onConfirm={() => handleToggleStatus(deactivateDialog.user)}
-        title={deactivateDialog.user?.is_active ? 'Deactivate User' : 'Activate User'}
-        message={`Are you sure you want to ${deactivateDialog.user?.is_active ? 'deactivate' : 'activate'} ${deactivateDialog.user?.username}?`}
-        variant="consequential"
-        confirmLabel={deactivateDialog.user?.is_active ? 'Deactivate' : 'Activate'}
+        onDeactivate={handleDeactivate}
+        onActivate={handleActivate}
+        onDelete={handleDelete}
       />
     </Box>
   );

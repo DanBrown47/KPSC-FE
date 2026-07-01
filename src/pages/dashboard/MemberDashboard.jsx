@@ -30,40 +30,63 @@ export const MemberDashboard = () => {
       {isLoading ? (
         <Skeleton variant="rounded" height={120} sx={{ mb: 3 }} />
       ) : nextMeeting ? (
-        <Card sx={{ mb: 3, bgcolor: '#F0FDF4', border: '1px solid #BBF7D0' }}>
-          <CardContent>
-            <Typography variant="caption" sx={{ color: '#059669', fontWeight: 600, textTransform: 'uppercase' }}>
-              Next Sitting — Action Required
-            </Typography>
-            <Typography variant="h2" sx={{ color: '#0F1F3D', mt: 0.5 }}>{nextMeeting.title}</Typography>
-            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
-              {nextMeeting.sitting_date
-                ? new Date(nextMeeting.sitting_date).toLocaleDateString('en-IN', {
-                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
-                  })
-                : '—'}
-            </Typography>
-            <Tooltip title={!nextMeeting.sitting_enabled ? 'Chairman has not opened the sitting yet' : ''}>
-              <span>
-                <Button
-                  variant="contained"
-                  size="small"
-                  color="success"
-                  sx={{ mt: 1.5 }}
-                  disabled={!nextMeeting.sitting_enabled}
-                  onClick={() => navigate(`/sitting/${nextMeeting.id}`)}
-                >
-                  Join Sitting &amp; Vote
-                </Button>
-              </span>
-            </Tooltip>
-            {!nextMeeting.sitting_enabled && (
+        nextMeeting.sitting_enabled ? (
+          <Card sx={{ mb: 3, bgcolor: '#059669', border: '1px solid #047857', color: '#fff' }}>
+            <CardContent>
+              <Typography variant="caption" sx={{ color: '#D1FAE5', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+                Sitting is LIVE
+              </Typography>
+              <Typography variant="h2" sx={{ color: '#fff', mt: 0.5 }}>{nextMeeting.title}</Typography>
+              <Typography variant="body2" sx={{ color: '#D1FAE5', mt: 0.5 }}>
+                {nextMeeting.sitting_date
+                  ? new Date(nextMeeting.sitting_date).toLocaleDateString('en-IN', {
+                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    })
+                  : '—'}
+              </Typography>
+              <Button
+                variant="contained"
+                size="small"
+                onClick={() => navigate(`/sitting/${nextMeeting.id}`)}
+                sx={{ mt: 1.5, bgcolor: '#fff', color: '#059669', '&:hover': { bgcolor: '#D1FAE5' } }}
+              >
+                Join Sitting &amp; Vote
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <Card sx={{ mb: 3, bgcolor: '#F0FDF4', border: '1px solid #BBF7D0' }}>
+            <CardContent>
+              <Typography variant="caption" sx={{ color: '#059669', fontWeight: 600, textTransform: 'uppercase' }}>
+                Next Sitting — Action Required
+              </Typography>
+              <Typography variant="h2" sx={{ color: '#0F1F3D', mt: 0.5 }}>{nextMeeting.title}</Typography>
+              <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+                {nextMeeting.sitting_date
+                  ? new Date(nextMeeting.sitting_date).toLocaleDateString('en-IN', {
+                      weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                    })
+                  : '—'}
+              </Typography>
+              <Tooltip title="Chairman has not opened the sitting yet">
+                <span>
+                  <Button
+                    variant="contained"
+                    size="small"
+                    color="success"
+                    sx={{ mt: 1.5 }}
+                    disabled
+                  >
+                    Join Sitting &amp; Vote
+                  </Button>
+                </span>
+              </Tooltip>
               <Typography variant="caption" sx={{ display: 'block', color: '#6B7280', mt: 0.5 }}>
                 Waiting for Chairman to open the sitting
               </Typography>
-            )}
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )
       ) : null}
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>

@@ -35,6 +35,11 @@ const buildMeetingTitle = (sittingNumber, date) => {
   return `${sittingNumber} SITTING OF THE COMMISSION FOR THE MONTH OF ${month} HELD ON ${day} ${month} ${year}`;
 };
 
+const shortTitle = (title) => {
+  const match = title?.match(/^(\d+(?:st|nd|rd|th))\s/i);
+  return match ? `${match[1]} Sitting` : title;
+};
+
 const STATUS_COLORS = {
   SCHEDULED: '#1D4ED8',
   FINALIZED: '#F0B429',
@@ -178,7 +183,7 @@ export const CalendarPage = () => {
                       }}
                     >
                       <Typography variant="caption" sx={{ color: '#fff', fontSize: '0.625rem', fontWeight: 500, display: 'block' }} noWrap>
-                        {m.title}
+                        {shortTitle(m.title)}
                       </Typography>
                     </Box>
                   ))}

@@ -2,7 +2,10 @@ import { usePermissions } from '../../hooks/usePermissions.js';
 import { ChairmanPSDashboard } from './ChairmanPSDashboard.jsx';
 import { ChairmanDashboard } from './ChairmanDashboard.jsx';
 import { MemberDashboard } from './MemberDashboard.jsx';
+import { MemberPADashboard } from './MemberPADashboard.jsx';
 import { RNADashboard } from './RNADashboard.jsx';
+import { SecretaryDashboard } from './SecretaryDashboard.jsx';
+import { SecretaryPADashboard } from './SecretaryPADashboard.jsx';
 import { WingASJSDashboard } from './WingASJSDashboard.jsx';
 import { WingMemberDashboard } from './WingMemberDashboard.jsx';
 import { AdminDashboard } from './AdminDashboard.jsx';
@@ -19,6 +22,10 @@ const ROLE_DASHBOARDS = {
   WING_JS: WingASJSDashboard,
   WING_HEAD: WingASJSDashboard,
   WING_MEMBER: WingMemberDashboard,
+  CA: WingASJSDashboard,
+  SECRETARY: SecretaryDashboard,
+  SECRETARY_PA: SecretaryPADashboard,
+  MEMBER_PA: MemberPADashboard,
   WEB_ADMIN: AdminDashboard,
 };
 

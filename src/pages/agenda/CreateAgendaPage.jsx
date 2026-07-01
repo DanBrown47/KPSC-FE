@@ -9,8 +9,6 @@ import StepLabel from '@mui/material/StepLabel';
 import Button from '@mui/material/Button';
 import TextField from '@mui/material/TextField';
 import MenuItem from '@mui/material/MenuItem';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
 import Typography from '@mui/material/Typography';
 import CircularProgress from '@mui/material/CircularProgress';
 import Alert from '@mui/material/Alert';
@@ -57,7 +55,6 @@ export const CreateAgendaPage = () => {
     file_number: '',
     description: '',
     discussion_points: '',
-    is_supplementary: false,
     form_data: {},
   });
   const [errors, setErrors] = useState({});
@@ -124,7 +121,6 @@ export const CreateAgendaPage = () => {
         file_number: rawFileNumber,
         description: existingItem.description || '',
         discussion_points: existingItem.discussion_points || '',
-        is_supplementary: existingItem.is_supplementary || false,
         form_data: existingItem.form_data || {},
       });
       setFileNumPart(rawFileNumber);
@@ -165,19 +161,6 @@ export const CreateAgendaPage = () => {
     setForm(p => ({ ...p, file_number: derived }));
   }, [selectedPrefix, fileNumPart]);
 
-  // Apply auto-supplementary logic for preselected meeting once meetings list loads
-  useEffect(() => {
-    if (!isEdit && preselectedMeeting && meetings.length > 0) {
-      const mtg = meetings.find((m) => String(m.id) === String(preselectedMeeting));
-      if (mtg) {
-        setForm((p) => ({
-          ...p,
-          is_supplementary: mtg.status === 'FINALIZED' ? true : mtg.status === 'SCHEDULED' ? false : p.is_supplementary,
-        }));
-      }
-    }
-  }, [meetings, preselectedMeeting, isEdit]);
-
   const handleField = (field) => (e) => {
     const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value;
     setForm((p) => ({ ...p, [field]: value }));
@@ -209,13 +192,9 @@ export const CreateAgendaPage = () => {
 
   const handleMeetingChange = (e) => {
     const meetingId = e.target.value;
-    const mtg = meetings.find((m) => String(m.id) === String(meetingId));
     setForm((p) => ({
       ...p,
       meeting: meetingId,
-      is_supplementary: mtg?.status === 'FINALIZED' ? true
-        : mtg?.status === 'SCHEDULED' ? false
-        : p.is_supplementary,
     }));
     setIsDirty(true);
     if (errors.meeting) setErrors((p) => ({ ...p, meeting: '' }));
@@ -356,7 +335,7 @@ export const CreateAgendaPage = () => {
 
               {selectedMeetingStatus === 'FINALIZED' && (
                 <Alert severity="info">
-                  This meeting is finalized. New agenda items will be created as <strong>supplementary</strong>.
+                  This meeting is finalized. Items added here will automatically be created as <strong>supplementary</strong>.
                 </Alert>
               )}
               {selectedMeetingStatus === 'COMPLETED' && (
@@ -402,20 +381,6 @@ export const CreateAgendaPage = () => {
                 ))}
               </TextField>
 
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={form.is_supplementary}
-                    onChange={handleField('is_supplementary')}
-                    disabled={!form.meeting || selectedMeetingStatus === 'FINALIZED'}
-                  />
-                }
-                label={
-                  selectedMeetingStatus === 'FINALIZED'
-                    ? 'Supplementary agenda item (required for finalized meetings)'
-                    : 'This is a supplementary agenda item'
-                }
-              />
             </Box>
           )}
 

@@ -340,7 +340,7 @@ export const RNADashboard = () => {
               ) : (
                 <>
                   <Alert severity="info" sx={{ mb: 2 }}>
-                    Consolidating supplementary items assigns new agenda numbers and reindexes all serial numbers for this meeting.
+                    Consolidating supplementary items assigns agenda numbers and serial numbers. Existing regular items keep their serial numbers.
                   </Alert>
                   <Box sx={{ display: 'flex', gap: 1, mb: 2, alignItems: 'center' }}>
                     <Typography variant="body2" color="text.secondary" sx={{ flexGrow: 1 }}>

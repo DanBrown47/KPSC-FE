@@ -30,6 +30,14 @@ export const usersApi = createApi({
       query: (id) => ({ url: `users/${id}/activate/`, method: 'POST' }),
       invalidatesTags: ['User'],
     }),
+    softDeleteUser: builder.mutation({
+      query: ({ id, deletion_reason }) => ({
+        url: `users/${id}/soft-delete/`,
+        method: 'POST',
+        body: deletion_reason ? { deletion_reason } : {},
+      }),
+      invalidatesTags: ['User'],
+    }),
     resetPassword: builder.mutation({
       query: ({ id, new_password }) => ({
         url: `users/${id}/reset-password/`,
@@ -87,6 +95,7 @@ export const {
   useUpdateUserMutation,
   useDeactivateUserMutation,
   useActivateUserMutation,
+  useSoftDeleteUserMutation,
   useResetPasswordMutation,
   useGetWingRolesQuery,
   useAddWingRoleMutation,

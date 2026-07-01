@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -32,11 +32,11 @@ import { shouldShowSerialNumber } from '../../utils/serialNumberUtils.js';
 import { VOTE_CONFIG } from '../../utils/statusConfig.js';
 
 const VOTE_TYPES = [
-  { key: 'APPROVE', label: 'Approve', color: '#059669', bg: '#ECFDF5' },
-  { key: 'REJECT', label: 'Reject', color: '#DC2626', bg: '#FEF2F2' },
-  { key: 'POSTPONE', label: 'Postpone', color: '#D97706', bg: '#FFFBEB' },
-  { key: 'DEFER', label: 'Defer', color: '#2563AB', bg: '#EFF6FF' },
-  { key: 'UNDO', label: 'Undo', color: '#6B7280', bg: '#F3F4F6' },
+  { key: 'APPROVE', label: 'Approve', color: '#ffffff', bg: '#059669' },
+  { key: 'REJECT', label: 'Reject', color: '#ffffff', bg: '#DC2626' },
+  { key: 'POSTPONE', label: 'Postpone', color: '#0b1c30', bg: '#F59E0B' },
+  { key: 'DEFER', label: 'Defer', color: '#ffffff', bg: '#2563EB' },
+  { key: 'UNDO', label: 'Undo', color: '#64748B', bg: '#E2E8F0' },
 ];
 
 const DECISION_TYPES = [
@@ -48,12 +48,18 @@ const DECISION_TYPES = [
 
 const DISCUSSED_STATUSES = new Set(['DISCUSSED', 'VOTED', 'CHAIRMAN_DECIDED', 'DEFERRED', 'UNAPPROVED', 'ARCHIVED']);
 
+const NAVY = '#0F172A';
+const ADMIN_BLUE = '#2563EB';
+const AMBER = '#F59E0B';
+const SURFACE = '#F8FAFC';
+const CARD_BG = '#FFFFFF';
+
 const FieldRow = ({ label, value }) => (
-  <Box sx={{ py: 1, borderBottom: '1px solid #F1F5F9', display: 'flex', gap: 2 }}>
-    <Typography variant="body2" color="text.secondary" sx={{ minWidth: 140, flexShrink: 0 }}>
+  <Box sx={{ py: 1, borderBottom: '1px solid #E2E8F0', display: 'flex', gap: 2 }}>
+    <Typography variant="caption" sx={{ minWidth: 140, flexShrink: 0, fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontSize: '0.6875rem' }}>
       {label}
     </Typography>
-    <Typography variant="body2">{value || '—'}</Typography>
+    <Typography variant="body2" sx={{ color: '#0F172A', fontWeight: 400 }}>{value || '—'}</Typography>
   </Box>
 );
 
@@ -64,42 +70,42 @@ const SerialProgressPanel = ({ items, selectedItemId, onSelect }) => {
   const supplementaryItems = items.filter((i) => i.is_supplementary);
 
   const getColor = (item) => {
-    if (DISCUSSED_STATUSES.has(item.status)) return '#059669';
-    if (item.id === selectedItemId) return '#2563AB';
-    return '#94A3B8';
+    if (DISCUSSED_STATUSES.has(item.status)) return '#34D399';
+    if (item.id === selectedItemId) return '#60A5FA';
+    return '#64748B';
   };
 
   const getBg = (item) => {
-    if (DISCUSSED_STATUSES.has(item.status)) return '#ECFDF5';
-    if (item.id === selectedItemId) return '#EFF6FF';
-    return '#F8FAFC';
+    if (DISCUSSED_STATUSES.has(item.status)) return 'rgba(52,211,153,0.15)';
+    if (item.id === selectedItemId) return 'rgba(96,165,250,0.2)';
+    return 'rgba(100,116,139,0.15)';
   };
 
   return (
-    <Box sx={{ p: 1.5, borderBottom: '1px solid #E2E8F0' }}>
-      <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: 0.5, display: 'block', mb: 1 }}>
+    <Box sx={{ p: 2, borderBottom: '1px solid rgba(148,163,184,0.2)' }}>
+      <Typography variant="caption" sx={{ fontWeight: 700, color: '#94A3B8', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', mb: 1.5, fontSize: '0.6875rem' }}>
         Agenda Progress
       </Typography>
       <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-        {regularItems.map((item) => (
+        {regularItems.map((item, idx) => (
           <Tooltip key={item.id} title={item.topic} placement="top">
             <Box
               onClick={() => onSelect(item.id)}
               sx={{
                 width: 32,
                 height: 32,
-                borderRadius: '50%',
+                borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
                 bgcolor: getBg(item),
-                border: `2px solid ${getColor(item)}`,
+                border: `1.5px solid ${getColor(item)}`,
                 color: getColor(item),
                 fontSize: '0.6875rem',
                 fontWeight: 700,
                 transition: 'all 0.15s',
-                '&:hover': { opacity: 0.8, transform: 'scale(1.1)' },
+                '&:hover': { opacity: 0.85, transform: 'scale(1.08)' },
               }}
             >
               {item.serial_number?.split('/')[0] || '?'}
@@ -113,18 +119,18 @@ const SerialProgressPanel = ({ items, selectedItemId, onSelect }) => {
               sx={{
                 width: 32,
                 height: 32,
-                borderRadius: '50%',
+                borderRadius: '4px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
                 bgcolor: getBg(item),
-                border: `2px dashed ${getColor(item)}`,
+                border: `1.5px dashed ${getColor(item)}`,
                 color: getColor(item),
                 fontSize: '0.6875rem',
                 fontWeight: 700,
                 transition: 'all 0.15s',
-                '&:hover': { opacity: 0.8, transform: 'scale(1.1)' },
+                '&:hover': { opacity: 0.85, transform: 'scale(1.08)' },
               }}
             >
               S{idx + 1}
@@ -132,15 +138,15 @@ const SerialProgressPanel = ({ items, selectedItemId, onSelect }) => {
           </Tooltip>
         ))}
       </Box>
-      <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
+      <Box sx={{ display: 'flex', gap: 2, mt: 1.5 }}>
         {[
-          { color: '#059669', label: 'Discussed' },
-          { color: '#2563AB', label: 'Current' },
-          { color: '#94A3B8', label: 'Pending' },
+          { color: '#34D399', label: 'Discussed' },
+          { color: '#60A5FA', label: 'Current' },
+          { color: '#64748B', label: 'Pending' },
         ].map(({ color, label }) => (
           <Box key={label} sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-            <Box sx={{ width: 8, height: 8, borderRadius: '50%', bgcolor: color }} />
-            <Typography variant="caption" sx={{ color: '#64748B', fontSize: '0.6rem' }}>{label}</Typography>
+            <Box sx={{ width: 8, height: 8, borderRadius: '2px', bgcolor: color }} />
+            <Typography variant="caption" sx={{ color: '#94A3B8', fontSize: '0.6rem', fontWeight: 500 }}>{label}</Typography>
           </Box>
         ))}
       </Box>
@@ -164,9 +170,9 @@ const ChairmanControls = ({ meeting }) => {
   };
 
   return (
-    <Card sx={{ mb: 2, bgcolor: '#FFFBEB', border: '1px solid #FDE68A' }}>
+    <Card sx={{ mb: 2, bgcolor: '#FFFBEB', border: '1px solid #F59E0B', borderRadius: '8px' }}>
       <CardContent sx={{ py: 1.5, '&:last-child': { pb: 1.5 } }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', color: '#92400E', display: 'block', mb: 1 }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#92400E', display: 'block', mb: 1, fontSize: '0.6875rem' }}>
           Chairman Controls
         </Typography>
         <Box sx={{ display: 'flex', gap: 3, flexWrap: 'wrap' }}>
@@ -217,9 +223,9 @@ const MyVoteSection = ({ item, votingEnabled }) => {
 
   return (
     <Box sx={{ mt: 2 }}>
-      <Typography variant="h5" gutterBottom>My Vote</Typography>
+      <Typography variant="h5" gutterBottom sx={{ fontFamily: '"Hanken Grotesk", sans-serif', fontWeight: 600, color: '#0F172A' }}>My Vote</Typography>
       {!votingEnabled && (
-        <Typography variant="caption" sx={{ color: '#6B7280', display: 'block', mb: 1 }}>
+        <Typography variant="caption" sx={{ color: '#64748B', display: 'block', mb: 1, fontWeight: 500 }}>
           Voting is not open yet. Waiting for Chairman.
         </Typography>
       )}
@@ -227,7 +233,7 @@ const MyVoteSection = ({ item, votingEnabled }) => {
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
           <Chip
             label={VOTE_CONFIG[myVote]?.label || myVote}
-            sx={{ bgcolor: VOTE_CONFIG[myVote]?.bgColor, color: VOTE_CONFIG[myVote]?.color, fontWeight: 700 }}
+            sx={{ bgcolor: VOTE_CONFIG[myVote]?.bgColor, color: VOTE_CONFIG[myVote]?.color, fontWeight: 700, borderRadius: '4px' }}
           />
         </Box>
       ) : (
@@ -243,10 +249,12 @@ const MyVoteSection = ({ item, votingEnabled }) => {
                 height: 44,
                 bgcolor: v.bg,
                 color: v.color,
-                border: `1px solid ${v.color}44`,
+                border: 'none',
+                borderRadius: '4px',
                 fontWeight: 600,
+                textTransform: 'none',
                 '&:hover': { bgcolor: v.bg, opacity: 0.85 },
-                '&:disabled': { bgcolor: '#F1F5F9', color: '#94A3B8' },
+                '&:disabled': { bgcolor: '#E2E8F0', color: '#94A3B8' },
               }}
             >
               {v.label}
@@ -282,30 +290,31 @@ const VoteCountSection = ({ itemId, isChairman }) => {
   return (
     <Box sx={{ mt: 2 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 1 }}>
-        <Typography variant="h5">Vote Count</Typography>
-        <Typography variant="caption" color="text.secondary">
+        <Typography variant="h5" sx={{ fontFamily: '"Hanken Grotesk", sans-serif', fontWeight: 600, color: '#0F172A' }}>Vote Count</Typography>
+        <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 500 }}>
           {totalVotes} of {totalMembers} members voted
         </Typography>
       </Box>
       <LinearProgress
         variant="determinate"
         value={totalMembers > 0 ? (totalVotes / totalMembers) * 100 : 0}
-        sx={{ mb: 2, height: 6, borderRadius: 3 }}
+        sx={{ mb: 2, height: 4, borderRadius: 2, bgcolor: '#E2E8F0', '& .MuiLinearProgress-bar': { bgcolor: ADMIN_BLUE } }}
       />
       {VOTE_TYPES.map((v) => (
         <Box key={v.key} sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 1 }}>
-          <Typography variant="body2" sx={{ color: v.color, fontWeight: 600, minWidth: 80 }}>{v.label}</Typography>
-          <Box sx={{ flex: 1, height: 16, bgcolor: '#F1F5F9', borderRadius: 1, overflow: 'hidden' }}>
+          <Typography variant="caption" sx={{ color: v.bg, fontWeight: 700, minWidth: 80, textTransform: 'uppercase', letterSpacing: '0.03em' }}>{v.label}</Typography>
+          <Box sx={{ flex: 1, height: 12, bgcolor: '#F1F5F9', borderRadius: '2px', overflow: 'hidden' }}>
             <Box
               sx={{
                 height: '100%',
                 width: `${totalVotes > 0 ? ((summary[v.key] || 0) / totalVotes) * 100 : 0}%`,
-                bgcolor: v.color,
+                bgcolor: v.bg,
+                borderRadius: '2px',
                 transition: 'width 0.3s',
               }}
             />
           </Box>
-          <Typography variant="caption" sx={{ minWidth: 24, textAlign: 'right' }}>{summary[v.key] || 0}</Typography>
+          <Typography variant="caption" sx={{ minWidth: 24, textAlign: 'right', fontWeight: 600, color: '#0F172A' }}>{summary[v.key] || 0}</Typography>
         </Box>
       ))}
       {isChairman && (
@@ -336,7 +345,7 @@ const VoteCountSection = ({ itemId, isChairman }) => {
             variant="contained"
             disabled={!chairmanDecision.type || submitting}
             onClick={handleSubmitDecision}
-            sx={{ bgcolor: '#F0B429', color: '#0F1F3D', '&:hover': { bgcolor: '#D97706' } }}
+            sx={{ bgcolor: AMBER, color: '#0F172A', fontWeight: 700, borderRadius: '4px', '&:hover': { bgcolor: '#D97706' } }}
           >
             Enter Decision
           </Button>
@@ -365,10 +374,10 @@ const AnnotationsPanel = ({ agendaItemId }) => {
 
   return (
     <Box sx={{ mt: 2 }}>
-      <Divider sx={{ mb: 2 }} />
+      <Divider sx={{ mb: 2, borderColor: '#E2E8F0' }} />
       <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1.5 }}>
-        <LockIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: 'text.secondary' }}>
+        <LockIcon sx={{ fontSize: 16, color: '#F59E0B' }} />
+        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#64748B', fontSize: '0.6875rem' }}>
           My Private Annotations
         </Typography>
       </Box>
@@ -381,7 +390,7 @@ const AnnotationsPanel = ({ agendaItemId }) => {
           {notes.map((note) => (
             <Box
               key={note.id}
-              sx={{ p: 1.5, bgcolor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 1 }}
+              sx={{ p: 1.5, bgcolor: '#FFFBEB', border: '1px solid #F59E0B33', borderRadius: '4px' }}
             >
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
                 {note.content}
@@ -408,7 +417,7 @@ const AnnotationsPanel = ({ agendaItemId }) => {
           size="small"
           onClick={handleSubmit}
           disabled={!newNote.trim() || isLoading}
-          sx={{ flexShrink: 0, height: 56 }}
+          sx={{ flexShrink: 0, height: 56, borderColor: '#E2E8F0', color: '#0F172A', borderRadius: '4px' }}
         >
           Add
         </Button>
@@ -438,8 +447,8 @@ const RemarksPanel = ({ agendaItemId }) => {
 
   return (
     <Box sx={{ mt: 2 }}>
-      <Divider sx={{ mb: 2 }} />
-      <Typography variant="h5" gutterBottom>Points for Discussion</Typography>
+      <Divider sx={{ mb: 2, borderColor: '#E2E8F0' }} />
+      <Typography variant="h5" gutterBottom sx={{ fontFamily: '"Hanken Grotesk", sans-serif', fontWeight: 600, color: '#0F172A' }}>Points for Discussion</Typography>
       {isLoading ? (
         <CircularProgress size={20} />
       ) : remarks.length === 0 ? (
@@ -449,16 +458,16 @@ const RemarksPanel = ({ agendaItemId }) => {
       ) : (
         <Box sx={{ mb: 1.5, display: 'flex', flexDirection: 'column', gap: 1 }}>
           {remarks.map((r) => (
-            <Box key={r.id} sx={{ p: 1.5, bgcolor: '#F0F9FF', border: '1px solid #BAE6FD', borderRadius: 1 }}>
+            <Box key={r.id} sx={{ p: 1.5, bgcolor: '#EFF6FF', border: '1px solid #2563EB22', borderRadius: '4px' }}>
               <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 0.5 }}>
-                <Typography variant="caption" sx={{ fontWeight: 700, color: '#0369A1' }}>
+                <Typography variant="caption" sx={{ fontWeight: 700, color: ADMIN_BLUE, textTransform: 'uppercase', letterSpacing: '0.03em' }}>
                   {r.member_name}
                 </Typography>
                 <Typography variant="caption" color="text.disabled">
                   {r.created_at ? formatDistanceToNow(new Date(r.created_at), { addSuffix: true }) : ''}
                 </Typography>
               </Box>
-              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
+              <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6, color: '#0F172A' }}>
                 {r.content}
               </Typography>
             </Box>
@@ -480,7 +489,7 @@ const RemarksPanel = ({ agendaItemId }) => {
           size="small"
           onClick={handleSubmit}
           disabled={!newRemark.trim() || submitting}
-          sx={{ flexShrink: 0, height: 56 }}
+          sx={{ flexShrink: 0, height: 56, borderColor: '#E2E8F0', color: '#0F172A', borderRadius: '4px' }}
         >
           Add
         </Button>
@@ -506,9 +515,9 @@ const CommissionDecisionPanel = ({ agendaItemId, existingDecision }) => {
 
   return (
     <Box sx={{ mt: 2 }}>
-      <Divider sx={{ mb: 2 }} />
-      <Box sx={{ p: 2, bgcolor: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 1 }}>
-        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, color: '#92400E', display: 'block', mb: 1.5 }}>
+      <Divider sx={{ mb: 2, borderColor: '#E2E8F0' }} />
+      <Box sx={{ p: 2, bgcolor: '#FFFBEB', border: '1px solid #F59E0B', borderRadius: '8px' }}>
+        <Typography variant="caption" sx={{ fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: '#92400E', display: 'block', mb: 1.5, fontSize: '0.6875rem' }}>
           Decision of the Commission
         </Typography>
         <TextField
@@ -533,7 +542,7 @@ const CommissionDecisionPanel = ({ agendaItemId, existingDecision }) => {
           variant="contained"
           onClick={handleSave}
           disabled={saving}
-          sx={{ bgcolor: '#F0B429', color: '#0F1F3D', '&:hover': { bgcolor: '#D97706' } }}
+          sx={{ bgcolor: AMBER, color: '#0F172A', fontWeight: 700, borderRadius: '4px', '&:hover': { bgcolor: '#D97706' } }}
         >
           Save Decision
         </Button>
@@ -550,17 +559,17 @@ const DocumentsSection = ({ agendaItemId, onOpenDoc }) => {
 
   return (
     <Box sx={{ mt: 2 }}>
-      <Typography variant="h5" gutterBottom>Documents</Typography>
+      <Typography variant="h5" gutterBottom sx={{ fontFamily: '"Hanken Grotesk", sans-serif', fontWeight: 600, color: '#0F172A' }}>Documents</Typography>
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 0.5 }}>
         {list.map((att) => (
           <Box
             key={att.id}
-            sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, borderRadius: 1, border: '1px solid #E2E8F0', cursor: 'pointer', '&:hover': { bgcolor: '#F8FAFC' } }}
+            sx={{ display: 'flex', alignItems: 'center', gap: 1, p: 1, borderRadius: '4px', border: '1px solid #E2E8F0', cursor: 'pointer', bgcolor: CARD_BG, '&:hover': { bgcolor: '#F8FAFC', borderColor: ADMIN_BLUE } }}
             onClick={() => onOpenDoc(att)}
           >
-            <ArticleIcon sx={{ fontSize: 18, color: '#64748B' }} />
-            <Typography variant="body2" sx={{ flex: 1 }} noWrap>{att.friendly_name}</Typography>
-            <Typography variant="caption" color="text.secondary">{att.mime_type?.includes('pdf') ? 'PDF' : 'Image'}</Typography>
+            <ArticleIcon sx={{ fontSize: 18, color: ADMIN_BLUE }} />
+            <Typography variant="body2" sx={{ flex: 1, color: '#0F172A' }} noWrap>{att.friendly_name}</Typography>
+            <Typography variant="caption" sx={{ color: '#64748B', fontWeight: 500 }}>{att.mime_type?.includes('pdf') ? 'PDF' : 'Image'}</Typography>
           </Box>
         ))}
       </Box>
@@ -586,6 +595,39 @@ export const SittingPage = () => {
   const regularItems = allItems.filter((i) => !i.is_supplementary);
   const supplementaryItems = allItems.filter((i) => i.is_supplementary);
 
+  // Group regular items by wing, ordered by wing.priority_order
+  const wingGroups = useMemo(() => {
+    const map = new Map();
+    for (const item of regularItems) {
+      const wingId = item.wing || 0;
+      const wingName = item.wing_name || 'Unknown Wing';
+      const wingPriority = item.wing_priority_order ?? Infinity;
+      if (!map.has(wingId)) {
+        map.set(wingId, { wingId, wingName, wingPriority, items: [] });
+      }
+      map.get(wingId).items.push(item);
+    }
+    const groups = Array.from(map.values());
+    groups.sort((a, b) => a.wingPriority - b.wingPriority);
+    return groups;
+  }, [regularItems]);
+
+  const supplementaryWingGroups = useMemo(() => {
+    const map = new Map();
+    for (const item of supplementaryItems) {
+      const wingId = item.wing || 0;
+      const wingName = item.wing_name || 'Unknown Wing';
+      const wingPriority = item.wing_priority_order ?? Infinity;
+      if (!map.has(wingId)) {
+        map.set(wingId, { wingId, wingName, wingPriority, items: [] });
+      }
+      map.get(wingId).items.push(item);
+    }
+    const groups = Array.from(map.values());
+    groups.sort((a, b) => a.wingPriority - b.wingPriority);
+    return groups;
+  }, [supplementaryItems]);
+
   const { data: selectedItem } = useGetAgendaItemQuery(selectedItemId, { skip: !selectedItemId });
 
   const visibleFields = selectedItem ? getVisibleFields(selectedItem, currentUser) : [];
@@ -595,38 +637,39 @@ export const SittingPage = () => {
 
   if (meetingLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
 
-  const renderAgendaList = (items, isSupplementary) => items.map((item) => {
+  const renderItemRow = (item, isSupplementary) => {
     const isDiscussed = DISCUSSED_STATUSES.has(item.status);
     const isCurrent = item.id === selectedItemId;
-    const borderColor = isDiscussed ? '#059669' : isCurrent ? '#2563AB' : 'transparent';
-    const bg = isDiscussed ? '#F0FDF4' : isCurrent ? '#EFF6FF' : 'transparent';
+    const borderColor = isDiscussed ? '#34D399' : isCurrent ? ADMIN_BLUE : 'transparent';
+    const bg = isDiscussed ? 'rgba(52,211,153,0.08)' : isCurrent ? 'rgba(37,99,235,0.12)' : 'transparent';
 
     return (
       <Box
         key={item.id}
         onClick={() => setSelectedItemId(item.id)}
         sx={{
-          p: 1.5, mb: 0.5, borderRadius: 1, cursor: 'pointer',
-          borderLeft: `3px solid ${borderColor}`,
+          p: 1.5, mb: 0.5, borderRadius: '4px', cursor: 'pointer',
+          borderLeft: isCurrent ? `3px solid ${ADMIN_BLUE}` : isDiscussed ? '3px solid #34D399' : '3px solid transparent',
           bgcolor: bg,
-          '&:hover': { bgcolor: isCurrent ? bg : '#F8FAFC' },
+          transition: 'all 0.15s',
+          '&:hover': { bgcolor: isCurrent ? bg : 'rgba(148,163,184,0.1)' },
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
           {item.serial_number && (
-            <Typography variant="caption" sx={{ fontWeight: 700, color: isDiscussed ? '#059669' : isCurrent ? '#2563AB' : '#94A3B8', flexShrink: 0 }}>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: isDiscussed ? '#34D399' : isCurrent ? '#60A5FA' : '#64748B', flexShrink: 0 }}>
               #{item.serial_number}
             </Typography>
           )}
           {item.agenda_number && (
-            <Typography variant="caption" sx={{ fontWeight: 600, color: '#64748B', flexShrink: 0 }}>
+            <Typography variant="caption" sx={{ fontWeight: 600, color: '#94A3B8', flexShrink: 0 }}>
               A{item.agenda_number}
             </Typography>
           )}
           {isSupplementary && (
-            <Typography variant="caption" sx={{ fontWeight: 700, color: '#7C3AED', flexShrink: 0 }}>S</Typography>
+            <Typography variant="caption" sx={{ fontWeight: 700, color: '#A78BFA', flexShrink: 0 }}>S</Typography>
           )}
-          <Typography variant="body2" sx={{ flex: 1, fontWeight: isCurrent ? 600 : 400 }} noWrap>
+          <Typography variant="body2" sx={{ flex: 1, fontWeight: isCurrent ? 600 : 400, color: isCurrent ? '#ffffff' : '#CBD5E1' }} noWrap>
             {item.topic}
           </Typography>
         </Box>
@@ -635,7 +678,17 @@ export const SittingPage = () => {
         </Box>
       </Box>
     );
-  });
+  };
+
+  const renderWingGroups = (groups, isSupplementary) =>
+    groups.map((group) => (
+      <Box key={group.wingId}>
+        <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', px: 0.5, pt: 1, pb: 0.25, fontSize: '0.6875rem', borderBottom: '1px solid rgba(148,163,184,0.2)', mb: 0.5 }}>
+          {group.wingName}
+        </Typography>
+        {group.items.map((item) => renderItemRow(item, isSupplementary))}
+      </Box>
+    ));
 
   return (
     <Box sx={{ height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
@@ -644,7 +697,7 @@ export const SittingPage = () => {
           title={meeting?.title || 'Sitting Room'}
           breadcrumbs={[{ label: 'Meetings', href: '/meetings' }, { label: meeting?.title || 'Sitting' }]}
           actions={
-            <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(`/meetings/${meetingId}`)} variant="outlined">
+            <Button startIcon={<ArrowBackIcon />} onClick={() => navigate(`/meetings/${meetingId}`)} variant="outlined" sx={{ borderColor: '#E2E8F0', color: '#0F172A', borderRadius: '4px', '&:hover': { borderColor: ADMIN_BLUE, color: ADMIN_BLUE } }}>
               Back
             </Button>
           }
@@ -653,24 +706,24 @@ export const SittingPage = () => {
 
       {isChairman && meeting && <ChairmanControls meeting={meeting} />}
 
-      <Box sx={{ display: 'flex', flex: 1, gap: 0, border: '1px solid #E2E8F0', borderRadius: 2, overflow: 'hidden', bgcolor: 'background.paper' }}>
-        {/* Left panel — serial progress + agenda list */}
-        <Box sx={{ width: '32%', borderRight: '1px solid #E2E8F0', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <Box sx={{ display: 'flex', flex: 1, gap: 0, borderRadius: '8px', overflow: 'hidden', border: '1px solid #E2E8F0' }}>
+        {/* Left panel — dark navy sidebar */}
+        <Box sx={{ width: '32%', bgcolor: NAVY, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
           <SerialProgressPanel items={allItems} selectedItemId={selectedItemId} onSelect={setSelectedItemId} />
           <Box sx={{ flex: 1, overflowY: 'auto', p: 1 }}>
             {agendaLoading ? (
-              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress size={24} /></Box>
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress size={24} sx={{ color: '#94A3B8' }} /></Box>
             ) : (
               <>
-                {renderAgendaList(regularItems, false)}
+                {renderWingGroups(wingGroups, false)}
                 {supplementaryItems.length > 0 && (
                   <>
-                    <Divider sx={{ my: 1.5, borderColor: '#E9D5FF' }}>
-                      <Typography variant="caption" sx={{ color: '#7C3AED', fontWeight: 600, fontSize: '0.6875rem' }}>
+                    <Divider sx={{ my: 1.5, borderColor: 'rgba(167,139,250,0.3)' }}>
+                      <Typography variant="caption" sx={{ color: '#A78BFA', fontWeight: 600, fontSize: '0.6875rem' }}>
                         SUPPLEMENTARY AGENDA
                       </Typography>
                     </Divider>
-                    {renderAgendaList(supplementaryItems, true)}
+                    {renderWingGroups(supplementaryWingGroups, true)}
                   </>
                 )}
               </>
@@ -678,46 +731,46 @@ export const SittingPage = () => {
           </Box>
         </Box>
 
-        {/* Right panel — item detail, documents, annotations, voting */}
-        <Box sx={{ flex: 1, overflowY: 'auto', p: 3 }}>
+        {/* Right panel — light content area */}
+        <Box sx={{ flex: 1, overflowY: 'auto', p: 3, bgcolor: SURFACE }}>
           {!selectedItem ? (
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: 'text.disabled', gap: 1 }}>
+            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', color: '#94A3B8', gap: 1 }}>
               <Typography variant="body1">Select an agenda item to view details</Typography>
             </Box>
           ) : (
             <>
               <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 2, flexWrap: 'wrap' }}>
                 {selectedItem.serial_number && (
-                  <Chip label={`Sl No. ${selectedItem.serial_number}`} sx={{ bgcolor: '#F0B429', color: '#0F1F3D', fontWeight: 700 }} />
+                  <Chip label={`Sl No. ${selectedItem.serial_number}`} sx={{ bgcolor: AMBER, color: '#0F172A', fontWeight: 700, borderRadius: '4px' }} />
                 )}
                 {selectedItem.agenda_number && (
-                  <Chip label={`Agenda No. ${selectedItem.agenda_number}`} variant="outlined" sx={{ fontWeight: 700, borderColor: '#CBD5E1', color: '#475569' }} />
+                  <Chip label={`Agenda No. ${selectedItem.agenda_number}`} variant="outlined" sx={{ fontWeight: 700, borderColor: '#CBD5E1', color: '#475569', borderRadius: '4px' }} />
                 )}
-                <Typography variant="h2" sx={{ flex: 1 }}>{selectedItem.topic}</Typography>
+                <Typography variant="h2" sx={{ flex: 1, fontFamily: '"Hanken Grotesk", sans-serif', fontWeight: 700, color: '#0F172A' }}>{selectedItem.topic}</Typography>
                 <StatusChip status={selectedItem.status} />
               </Box>
 
               {visibleFields.includes(FIELD_GROUPS.BASE) && (
-                <Box sx={{ mb: 2 }}>
+                <Box sx={{ mb: 2, bgcolor: CARD_BG, borderRadius: '8px', border: '1px solid #E2E8F0', p: 2 }}>
                   <FieldRow label="Wing" value={selectedItem.wing?.name} />
                   <FieldRow label="File No." value={selectedItem.file_number} />
                   {selectedItem.is_supplementary && (
-                    <FieldRow label="Type" value={<Chip label="Supplementary" size="small" sx={{ bgcolor: '#F5F3FF', color: '#7C3AED' }} />} />
+                    <FieldRow label="Type" value={<Chip label="Supplementary" size="small" sx={{ bgcolor: '#F5F3FF', color: '#7C3AED', borderRadius: '4px' }} />} />
                   )}
                 </Box>
               )}
 
               {visibleFields.includes(FIELD_GROUPS.WING_CONTENT) && selectedItem.description && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="h5" gutterBottom>Description</Typography>
-                  <Typography variant="body2" sx={{ lineHeight: 1.8 }}>{selectedItem.description}</Typography>
+                <Box sx={{ mb: 2, bgcolor: CARD_BG, borderRadius: '8px', border: '1px solid #E2E8F0', p: 2 }}>
+                  <Typography variant="h5" gutterBottom sx={{ fontFamily: '"Hanken Grotesk", sans-serif', fontWeight: 600, color: '#0F172A' }}>Description</Typography>
+                  <Typography variant="body2" sx={{ lineHeight: 1.8, color: '#0F172A' }}>{selectedItem.description}</Typography>
                 </Box>
               )}
 
               {visibleFields.includes(FIELD_GROUPS.WING_CONTENT) && selectedItem.discussion_points && (
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="h5" gutterBottom>Discussion Points</Typography>
-                  <Typography variant="body2" sx={{ lineHeight: 1.8 }}>{selectedItem.discussion_points}</Typography>
+                <Box sx={{ mb: 2, bgcolor: CARD_BG, borderRadius: '8px', border: '1px solid #E2E8F0', p: 2 }}>
+                  <Typography variant="h5" gutterBottom sx={{ fontFamily: '"Hanken Grotesk", sans-serif', fontWeight: 600, color: '#0F172A' }}>Discussion Points</Typography>
+                  <Typography variant="body2" sx={{ lineHeight: 1.8, color: '#0F172A' }}>{selectedItem.discussion_points}</Typography>
                 </Box>
               )}
 
@@ -733,7 +786,7 @@ export const SittingPage = () => {
               {/* Private annotations */}
               {(isMember || isChairman) && <AnnotationsPanel agendaItemId={selectedItem.id} />}
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 2, borderColor: '#E2E8F0' }} />
 
               {/* Voting */}
               {(isMember || isChairman) && (
