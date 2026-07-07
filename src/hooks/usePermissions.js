@@ -17,6 +17,8 @@ const ROLE_HIERARCHY = {
   RA_WING: 1,
 };
 
+const PRIVATE_NOTES_ROLES = new Set(['CHAIRMAN', 'MEMBER', 'SECRETARY', 'WING_AS', 'WING_JS', 'WING_ASJS']);
+
 export const usePermissions = () => {
   const globalRole = useSelector(selectGlobalRole);
   const currentUser = useSelector(selectCurrentUser);
@@ -34,6 +36,7 @@ export const usePermissions = () => {
   const canConvokeMeetings = () => isRole('CHAIRMAN_PS');
   const canConsolidate = () => isRole('CONSOLIDATOR');
   const canVote = () => isRole('MEMBER') || isRole('CHAIRMAN');
+  const canUsePrivateNotes = () => PRIVATE_NOTES_ROLES.has(globalRole);
 
   const isWingMemberForWing = (wingId) => {
     const wingRoles = currentUser?.wing_roles || [];
@@ -66,5 +69,6 @@ export const usePermissions = () => {
     isChairman: isRole('CHAIRMAN'),
     isMember: isRole('MEMBER'),
     isWebAdmin: isRole('WEB_ADMIN'),
+    canUsePrivateNotes,
   };
 };

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import Box from '@mui/material/Box';
 import Card from '@mui/material/Card';
@@ -14,7 +14,6 @@ import { setCredentials, deriveMenuPermissions } from '../../store/authSlice.js'
 
 export const LoginPage = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const dispatch = useDispatch();
   const [login, { isLoading }] = useLoginMutation();
 
@@ -22,8 +21,6 @@ export const LoginPage = () => {
   const [password, setPassword] = useState('');
   const [errors, setErrors] = useState({});
   const [serverError, setServerError] = useState('');
-
-  const from = location.state?.from?.pathname || '/dashboard';
 
   const validate = () => {
     const errs = {};
@@ -50,7 +47,7 @@ export const LoginPage = () => {
         user: result.user,
         menuPermissions: deriveMenuPermissions(result.user),
       }));
-      navigate(from, { replace: true });
+      navigate('/dashboard', { replace: true });
     } catch (err) {
       const detail = err?.data?.detail || err?.data?.non_field_errors?.[0] || 'Invalid credentials. Please try again.';
       setServerError(detail);

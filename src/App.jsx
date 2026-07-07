@@ -89,7 +89,14 @@ function App() {
             </ProtectedRoute>
           }
         />
-        <Route path="webadmin/audit" element={<AuditLogPage />} />
+        <Route
+          path="webadmin/audit"
+          element={
+            <ProtectedRoute requiredPermission="audit_viewer">
+              <AuditLogPage />
+            </ProtectedRoute>
+          }
+        />
         <Route
           path="webadmin/agenda-forms"
           element={

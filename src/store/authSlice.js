@@ -31,6 +31,7 @@ export const deriveMenuPermissions = (user) => {
       : null;
 
     const wingPerms = new Set((activeWingRole?.permission_roles || []).map((p) => p.permission_role));
+    const allPerms = new Set(activeWingRoles.flatMap((r) => (r.permission_roles || []).map((p) => p.permission_role)));
     const agendaViewer = [...AGENDA_VIEW_PERMS].some((p) => wingPerms.has(p));
     const canApprove = wingPerms.has('approve_agenda_item');
     // Show meetings/calendar only when user can do something agenda-related
@@ -44,7 +45,7 @@ export const deriveMenuPermissions = (user) => {
       report_viewer: false,
       user_manager: false,
       config_manager: false,
-      audit_viewer: false,
+      audit_viewer: allPerms.has('audit_viewer'),
       wing_switcher: hasMultipleWings,
     };
   }
@@ -52,6 +53,7 @@ export const deriveMenuPermissions = (user) => {
   // Non-wing-scoped global roles use role-based permissions
   const agendaRoles = ['CONSOLIDATOR', 'CHAIRMAN_PS', 'CHAIRMAN', 'MEMBER', 'MEMBER_PA', 'SECRETARY', 'SECRETARY_PA'];
   const wingSwitcherRoles = new Set(['CONSOLIDATOR']);
+  const allPerms = new Set(activeWingRoles.flatMap((r) => (r.permission_roles || []).map((p) => p.permission_role)));
   return {
     meeting_viewer: role !== 'WEB_ADMIN',
     agenda_viewer: agendaRoles.includes(role),
@@ -60,7 +62,7 @@ export const deriveMenuPermissions = (user) => {
     report_viewer: ['CHAIRMAN_PS', 'CONSOLIDATOR', 'CHAIRMAN', 'SECRETARY'].includes(role),
     user_manager: role === 'WEB_ADMIN',
     config_manager: role === 'WEB_ADMIN',
-    audit_viewer: ['WEB_ADMIN', 'CHAIRMAN_PS'].includes(role),
+    audit_viewer: ['CHAIRMAN', 'CHAIRMAN_PS'].includes(role) || allPerms.has('audit_viewer'),
     wing_switcher: wingSwitcherRoles.has(role) && hasMultipleWings,
   };
 };

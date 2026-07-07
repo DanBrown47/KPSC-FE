@@ -8,6 +8,7 @@ import Skeleton from '@mui/material/Skeleton';
 import Alert from '@mui/material/Alert';
 import { useNavigate } from 'react-router-dom';
 import { useGetAgendaItemsQuery } from '../../store/api/agendaApi.js';
+import { useGetMeetingsQuery } from '../../store/api/meetingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { ReturnedItemsBanner } from './ReturnedItemsBanner.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -34,7 +35,12 @@ export const WingASJSDashboard = () => {
 
   const queryParams = { limit: 100, ...(activeWingId ? { wing: activeWingId } : {}) };
   const { data: allItems, isLoading } = useGetAgendaItemsQuery(queryParams, { skip: !hasAnyPermission });
+  const { data: meetingsData, isLoading: meetingsLoading } = useGetMeetingsQuery({ status: 'FINALIZED', limit: 10 }, { skip: !hasAnyPermission });
+
   const items = Array.isArray(allItems?.results) ? allItems.results : Array.isArray(allItems) ? allItems : [];
+  const meetings = Array.isArray(meetingsData?.results) ? meetingsData.results : Array.isArray(meetingsData) ? meetingsData : [];
+  const now = new Date();
+  const nextMeeting = meetings.find((m) => new Date(m.sitting_date) >= now);
   const returnedItems = items.filter((i) => i.status === 'DRAFT' && i.return_comment);
   const pendingApproval = items.filter((i) => i.status === 'PENDING_WING_APPROVAL');
 
@@ -82,6 +88,26 @@ export const WingASJSDashboard = () => {
         }
       />
       <ReturnedItemsBanner items={returnedItems} />
+      {nextMeeting && (
+        <Card sx={{ mb: 3, bgcolor: '#EFF6FF', border: '1px solid #BFDBFE' }}>
+          <CardContent>
+            <Typography variant="caption" sx={{ color: '#1D4ED8', fontWeight: 600, textTransform: 'uppercase' }}>
+              Next Sitting
+            </Typography>
+            <Typography variant="h2" sx={{ color: '#0F1F3D', mt: 0.5 }}>{nextMeeting.title}</Typography>
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 0.5 }}>
+              {nextMeeting.sitting_date
+                ? new Date(nextMeeting.sitting_date).toLocaleDateString('en-IN', {
+                    weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
+                  })
+                : '—'}
+            </Typography>
+            <Button variant="contained" size="small" sx={{ mt: 1.5 }} onClick={() => navigate(`/meetings/${nextMeeting.id}`)}>
+              View Details
+            </Button>
+          </CardContent>
+        </Card>
+      )}
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>

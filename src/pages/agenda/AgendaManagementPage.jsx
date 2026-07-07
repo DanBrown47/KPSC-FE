@@ -21,6 +21,7 @@ import { ViewToggle } from '../../components/common/ViewToggle.jsx';
 import { usePermissions } from '../../hooks/usePermissions.js';
 import { useViewPreference } from '../../hooks/useViewPreference.js';
 import { shouldShowSerialNumber } from '../../utils/serialNumberUtils.js';
+import { formatSittingInfo } from '../../utils/sittingUtils.js';
 
 const STATUS_OPTIONS = [
   { value: '', label: 'All Statuses' },
@@ -52,6 +53,7 @@ export const AgendaManagementPage = () => {
     page_size: paginationModel.pageSize,
     search: search || undefined,
     status: statusFilter || undefined,
+    ...(currentUser?.active_wing_id ? { wing: currentUser.active_wing_id } : {}),
   });
 
   const rows = Array.isArray(data?.results) ? data.results : Array.isArray(data) ? data : [];
@@ -88,14 +90,22 @@ export const AgendaManagementPage = () => {
       headerName: 'Subject',
       flex: 2,
       minWidth: 200,
-      renderCell: ({ row }) => (
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.topic}</span>
-          {row.is_supplementary && (
-            <Chip label="Supplementary" size="small" sx={{ bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 600, fontSize: '0.625rem', height: 18 }} />
-          )}
-        </Box>
-      ),
+      renderCell: ({ row }) => {
+        const sittingInfo = formatSittingInfo(row.meeting_title, row.meeting_date);
+        return (
+          <Box sx={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', py: 0.5 }}>
+            {sittingInfo && (
+              <span style={{ fontSize: '0.7rem', color: '#9CA3AF', textTransform: 'capitalize' }}>{sittingInfo}</span>
+            )}
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{row.topic}</span>
+              {row.is_supplementary && (
+                <Chip label="Supplementary" size="small" sx={{ bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 600, fontSize: '0.625rem', height: 18 }} />
+              )}
+            </Box>
+          </Box>
+        );
+      },
     },
     {
       field: 'status',
@@ -196,6 +206,11 @@ export const AgendaManagementPage = () => {
                           <Chip label="Supp." size="small" sx={{ bgcolor: '#F5F3FF', color: '#7C3AED', fontWeight: 600, fontSize: '0.625rem', height: 18, flexShrink: 0 }} />
                         )}
                       </Box>
+                      {formatSittingInfo(row.meeting_title, row.meeting_date) && (
+                        <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                          {formatSittingInfo(row.meeting_title, row.meeting_date)}
+                        </Typography>
+                      )}
                       <Typography variant="body1" fontWeight={600} gutterBottom sx={{ lineHeight: 1.4 }}>
                         {row.topic}
                       </Typography>

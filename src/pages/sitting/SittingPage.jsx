@@ -580,7 +580,7 @@ const DocumentsSection = ({ agendaItemId, onOpenDoc }) => {
 export const SittingPage = () => {
   const { meetingId } = useParams();
   const navigate = useNavigate();
-  const { isMember, isChairman, currentUser } = usePermissions();
+  const { isMember, isChairman, currentUser, canUsePrivateNotes } = usePermissions();
 
   const [selectedItemId, setSelectedItemId] = useState(null);
   const [openDoc, setOpenDoc] = useState(null);
@@ -784,7 +784,7 @@ export const SittingPage = () => {
               {(isMember || isChairman) && <RemarksPanel agendaItemId={selectedItem.id} />}
 
               {/* Private annotations */}
-              {(isMember || isChairman) && <AnnotationsPanel agendaItemId={selectedItem.id} />}
+              {canUsePrivateNotes && <AnnotationsPanel agendaItemId={selectedItem.id} />}
 
               <Divider sx={{ my: 2, borderColor: '#E2E8F0' }} />
 

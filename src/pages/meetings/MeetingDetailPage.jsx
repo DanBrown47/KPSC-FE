@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Box from '@mui/material/Box';
 import Grid from '@mui/material/Grid';
@@ -12,11 +13,19 @@ import GavelIcon from '@mui/icons-material/Gavel';
 import LockOpenIcon from '@mui/icons-material/LockOpen';
 import DownloadIcon from '@mui/icons-material/Download';
 import AddIcon from '@mui/icons-material/Add';
-import { format } from 'date-fns';
-import { useGetMeetingQuery, useFinalizeMeetingMutation, useOpenMeetingMutation } from '../../store/api/meetingsApi.js';
+import EventBusyIcon from '@mui/icons-material/EventBusy';
+import Tooltip from '@mui/material/Tooltip';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
+import DialogActions from '@mui/material/DialogActions';
+import TextField from '@mui/material/TextField';
+import { format, isBefore, startOfDay, parseISO } from 'date-fns';
+import { useGetMeetingQuery, useFinalizeMeetingMutation, useOpenMeetingMutation, usePostponeMeetingMutation } from '../../store/api/meetingsApi.js';
 import { useGetAgendaItemsQuery } from '../../store/api/agendaApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
+import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
 import { usePermissions } from '../../hooks/usePermissions.js';
 import { useReportGeneration } from '../../hooks/useReportGeneration.js';
 import { useDispatch } from 'react-redux';
@@ -58,7 +67,7 @@ const ReportButton = ({ meetingId }) => {
     <Button
       variant="outlined"
       startIcon={status === 'error' ? undefined : undefined}
-      onClick={() => startGeneration({ meetingId, reportType: 'AGENDA' })}
+      onClick={() => startGeneration({ meetingId, reportType: 'AGENDA_SUMMARY' })}
       color={status === 'error' ? 'error' : 'primary'}
     >
       {status === 'error' ? 'Retry Report' : 'Generate Report'}
@@ -75,13 +84,28 @@ export const MeetingDetailPage = () => {
   const { data: meeting, isLoading } = useGetMeetingQuery(id);
   const [finalizeMeeting, { isLoading: finalizing }] = useFinalizeMeetingMutation();
   const [openMeeting, { isLoading: opening }] = useOpenMeetingMutation();
+  const [postponeMeeting, { isLoading: postponing }] = usePostponeMeetingMutation();
+  const [finalizeDialogOpen, setFinalizeDialogOpen] = useState(false);
+  const [postponeDialogOpen, setPostponeDialogOpen] = useState(false);
+  const [newSittingDate, setNewSittingDate] = useState('');
+  const [newSittingTime, setNewSittingTime] = useState('10:30');
 
-  const handleFinalize = async () => {
+  const isBeforeSittingDate = meeting?.sitting_date
+    ? isBefore(startOfDay(new Date()), startOfDay(parseISO(meeting.sitting_date)))
+    : false;
+
+  const handleFinalizeClick = () => {
+    setFinalizeDialogOpen(true);
+  };
+
+  const handleFinalizeConfirm = async () => {
     try {
       await finalizeMeeting(id).unwrap();
       dispatch(showToast({ message: 'Meeting finalized successfully', severity: 'success' }));
     } catch {
       dispatch(showToast({ message: 'Failed to finalize meeting', severity: 'error' }));
+    } finally {
+      setFinalizeDialogOpen(false);
     }
   };
 
@@ -91,6 +115,24 @@ export const MeetingDetailPage = () => {
       dispatch(showToast({ message: 'Meeting reopened successfully', severity: 'success' }));
     } catch {
       dispatch(showToast({ message: 'Failed to reopen meeting', severity: 'error' }));
+    }
+  };
+
+  const handlePostponeClick = () => {
+    setNewSittingDate('');
+    setNewSittingTime('10:30');
+    setPostponeDialogOpen(true);
+  };
+
+  const handlePostponeConfirm = async () => {
+    const datetime = `${newSittingDate}T${newSittingTime}:00`;
+    try {
+      await postponeMeeting({ id, new_sitting_date: datetime }).unwrap();
+      dispatch(showToast({ message: 'Sitting postponed successfully', severity: 'success' }));
+      setPostponeDialogOpen(false);
+    } catch (err) {
+      const message = err?.data?.detail || 'Failed to postpone sitting';
+      dispatch(showToast({ message, severity: 'error' }));
     }
   };
 
@@ -124,15 +166,19 @@ export const MeetingDetailPage = () => {
               <ReportButton meetingId={id} />
             )}
             {canFinalize && meeting.status === 'SCHEDULED' && (
-              <Button
-                variant="outlined"
-                color="warning"
-                startIcon={<GavelIcon />}
-                onClick={handleFinalize}
-                disabled={finalizing}
-              >
-                {finalizing ? 'Finalizing…' : 'Finalize Meeting'}
-              </Button>
+              <Tooltip title={isBeforeSittingDate ? 'Finalization is available only on or after the sitting date' : ''}>
+                <span>
+                  <Button
+                    variant="outlined"
+                    color="warning"
+                    startIcon={<GavelIcon />}
+                    onClick={handleFinalizeClick}
+                    disabled={finalizing || isBeforeSittingDate}
+                  >
+                    {finalizing ? 'Finalizing…' : 'Finalize Meeting'}
+                  </Button>
+                </span>
+              </Tooltip>
             )}
             {canFinalize && meeting.status === 'FINALIZED' && (
               <Button
@@ -149,6 +195,35 @@ export const MeetingDetailPage = () => {
               <Button variant="contained" startIcon={<GavelIcon />} onClick={() => navigate(`/sitting/${id}`)}>
                 Open Sitting
               </Button>
+            )}
+            {canFinalize && meeting.status === 'SCHEDULED' && meeting.can_be_postponed && (
+              <Tooltip title="Postpone this sitting to a new date. Only available when no chairman decisions have been recorded.">
+                <span>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    startIcon={<EventBusyIcon />}
+                    onClick={handlePostponeClick}
+                    disabled={postponing}
+                  >
+                    {postponing ? 'Postponing…' : 'Postpone Sitting'}
+                  </Button>
+                </span>
+              </Tooltip>
+            )}
+            {canFinalize && meeting.status === 'SCHEDULED' && !meeting.can_be_postponed && (
+              <Tooltip title="Cannot postpone: one or more agenda items already have a chairman decision.">
+                <span>
+                  <Button
+                    variant="outlined"
+                    color="secondary"
+                    startIcon={<EventBusyIcon />}
+                    disabled
+                  >
+                    Postpone Sitting
+                  </Button>
+                </span>
+              </Tooltip>
             )}
           </Box>
         }
@@ -197,6 +272,59 @@ export const MeetingDetailPage = () => {
           </Card>
         </Grid>
       </Grid>
+
+      <ConfirmDialog
+        open={finalizeDialogOpen}
+        onClose={() => setFinalizeDialogOpen(false)}
+        onConfirm={handleFinalizeConfirm}
+        title="Finalize Meeting"
+        message="Are you sure you want to finalize this meeting? Once finalized, no new regular agenda items can be added."
+        variant="consequential"
+        confirmLabel="Finalize"
+        loading={finalizing}
+      />
+
+      <Dialog open={postponeDialogOpen} onClose={() => setPostponeDialogOpen(false)} maxWidth="sm" fullWidth>
+        <DialogTitle>Postpone Sitting</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, pt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Reschedule this sitting to a new date. The meeting title will be updated to reflect the new date.
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              Current date: {meeting?.sitting_date ? format(new Date(meeting.sitting_date), 'EEEE, dd MMMM yyyy') : '—'}
+            </Typography>
+            <TextField
+              fullWidth
+              label="New Sitting Date"
+              type="date"
+              value={newSittingDate}
+              onChange={(e) => setNewSittingDate(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+            <TextField
+              fullWidth
+              label="New Sitting Time"
+              type="time"
+              value={newSittingTime}
+              onChange={(e) => setNewSittingTime(e.target.value)}
+              InputLabelProps={{ shrink: true }}
+              required
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
+          <Button onClick={() => setPostponeDialogOpen(false)}>Cancel</Button>
+          <Button
+            variant="contained"
+            onClick={handlePostponeConfirm}
+            disabled={!newSittingDate || !newSittingTime || postponing}
+          >
+            {postponing ? 'Postponing…' : 'Postpone'}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

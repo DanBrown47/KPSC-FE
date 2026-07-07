@@ -64,6 +64,14 @@ export const meetingsApi = createApi({
       }),
       invalidatesTags: (result, error, { meetingId }) => [{ type: 'Meeting', id: meetingId }, 'Meeting'],
     }),
+    postponeMeeting: builder.mutation({
+      query: ({ id, new_sitting_date }) => ({
+        url: `meetings/${id}/postpone/`,
+        method: 'POST',
+        body: { new_sitting_date },
+      }),
+      invalidatesTags: (result, error, { id }) => [{ type: 'Meeting', id }, 'Meeting', 'AgendaItem'],
+    }),
   }),
 });
 
@@ -79,4 +87,5 @@ export const {
   useToggleSupplementaryMutation,
   useEnableSittingMutation,
   useEnableVotingMutation,
+  usePostponeMeetingMutation,
 } = meetingsApi;

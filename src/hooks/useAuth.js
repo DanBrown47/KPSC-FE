@@ -27,7 +27,7 @@ export const useAuth = () => {
     dispatch(authApi.util.resetApiState());
     dispatch(agendaApi.util.resetApiState());
     dispatch(logout());
-    navigate('/login');
+    navigate('/login', { replace: true });
   };
 
   return {

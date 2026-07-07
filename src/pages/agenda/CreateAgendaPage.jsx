@@ -113,9 +113,22 @@ export const CreateAgendaPage = () => {
   useEffect(() => {
     if (existingItem && isEdit) {
       const rawFileNumber = existingItem.file_number || '';
+      const wingId = existingItem.wing?.id || existingItem.wing || '';
+      const wingData = wings.find(w => w.id === wingId || w.id === String(wingId));
+      const wingPrefixes = wingData?.file_prefix
+        ? wingData.file_prefix.split(',').map(p => p.trim()).filter(Boolean)
+        : [];
+      const matchingPrefix = wingPrefixes.find(p => rawFileNumber.startsWith(p));
+      if (matchingPrefix) {
+        const afterPrefix = rawFileNumber.slice(matchingPrefix.length);
+        // Strip leading slash (old format: GR/2026/001) and all other slashes for new format
+        setFileNumPart(afterPrefix.startsWith('/') ? afterPrefix.slice(1).replace(/\//g, '') : afterPrefix);
+      } else {
+        setFileNumPart(rawFileNumber);
+      }
       setForm({
         topic: existingItem.topic || '',
-        wing: existingItem.wing?.id || existingItem.wing || '',
+        wing: wingId,
         meeting: existingItem.meeting?.id || existingItem.meeting || '',
         agenda_form: existingItem.agenda_form?.id || existingItem.agenda_form || '',
         file_number: rawFileNumber,
@@ -123,9 +136,8 @@ export const CreateAgendaPage = () => {
         discussion_points: existingItem.discussion_points || '',
         form_data: existingItem.form_data || {},
       });
-      setFileNumPart(rawFileNumber);
     }
-  }, [existingItem, isEdit]);
+  }, [existingItem, isEdit, wings]);
 
   // Lock wing to effective wing for wing-scoped users
   useEffect(() => {
@@ -155,9 +167,14 @@ export const CreateAgendaPage = () => {
 
   // Sync derived file_number into form whenever prefix/number parts change
   useEffect(() => {
-    const derived = selectedPrefix && fileNumPart
-      ? `${selectedPrefix}/${fileNumPart}`
-      : fileNumPart;
+    let derived;
+    if (selectedPrefix && fileNumPart) {
+      derived = fileNumPart.startsWith(selectedPrefix)
+        ? fileNumPart
+        : `${selectedPrefix}${fileNumPart}`;
+    } else {
+      derived = fileNumPart || '';
+    }
     setForm(p => ({ ...p, file_number: derived }));
   }, [selectedPrefix, fileNumPart]);
 
@@ -409,9 +426,9 @@ export const CreateAgendaPage = () => {
                     label="File Number"
                     value={fileNumPart}
                     onChange={(e) => { setFileNumPart(e.target.value); setIsDirty(true); }}
-                    placeholder="e.g. 2026/001"
+                    placeholder="e.g. 2026001"
                     InputProps={selectedPrefix ? {
-                      startAdornment: <InputAdornment position="start">{selectedPrefix}/</InputAdornment>,
+                      startAdornment: <InputAdornment position="start">{selectedPrefix}</InputAdornment>,
                     } : undefined}
                     disabled={!form.wing}
                   />
@@ -422,9 +439,9 @@ export const CreateAgendaPage = () => {
                   label="File Number"
                   value={fileNumPart}
                   onChange={(e) => { setFileNumPart(e.target.value); setIsDirty(true); }}
-                  placeholder={hasSinglePrefix ? `e.g. ${filePrefixes[0]}/2026/001` : 'e.g. KPS/2026/001'}
+                  placeholder={hasSinglePrefix ? `e.g. ${filePrefixes[0]}2026001` : 'e.g. KPS2026001'}
                   InputProps={hasSinglePrefix ? {
-                    startAdornment: <InputAdornment position="start">{filePrefixes[0]}/</InputAdornment>,
+                    startAdornment: <InputAdornment position="start">{filePrefixes[0]}</InputAdornment>,
                   } : undefined}
                   disabled={!form.meeting}
                 />

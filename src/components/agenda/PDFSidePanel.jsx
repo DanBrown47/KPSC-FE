@@ -14,6 +14,7 @@ import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
 import { ReferenceNotesPanel } from './ReferenceNotesPanel.jsx';
 import { useGetAttachmentStreamQuery } from '../../store/api/agendaApi.js';
+import { usePermissions } from '../../hooks/usePermissions.js';
 
 // Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -22,6 +23,7 @@ pdfjs.GlobalWorkerOptions.workerSrc = new URL(
 ).toString();
 
 export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
+  const { canUsePrivateNotes } = usePermissions();
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.0);
@@ -181,9 +183,11 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
       </Box>
 
       {/* Reference notes */}
-      <Box sx={{ px: 2, pb: 2, maxHeight: 300, overflowY: 'auto', borderTop: '1px solid #E2E8F0', flexShrink: 0 }}>
-        <ReferenceNotesPanel agendaItemId={agendaItemId} attachmentId={attachment?.id} />
-      </Box>
+      {canUsePrivateNotes && (
+        <Box sx={{ px: 2, pb: 2, maxHeight: 300, overflowY: 'auto', borderTop: '1px solid #E2E8F0', flexShrink: 0 }}>
+          <ReferenceNotesPanel agendaItemId={agendaItemId} attachmentId={attachment?.id} />
+        </Box>
+      )}
     </Box>
   );
 };

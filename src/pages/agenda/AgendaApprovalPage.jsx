@@ -11,6 +11,7 @@ import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
 import { ConfirmDialog } from '../../components/common/ConfirmDialog.jsx';
 import { EmptyState } from '../../components/common/EmptyState.jsx';
+import { formatSittingInfo } from '../../utils/sittingUtils.js';
 import { useDispatch } from 'react-redux';
 import { showToast } from '../../store/uiSlice.js';
 import Divider from '@mui/material/Divider';
@@ -70,6 +71,11 @@ export const AgendaApprovalPage = () => {
               <CardContent>
                 <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
                   <Box sx={{ flex: 1 }}>
+                    {formatSittingInfo(item.meeting_title, item.meeting_date) && (
+                      <Typography variant="caption" color="text.secondary" sx={{ textTransform: 'capitalize' }}>
+                        {formatSittingInfo(item.meeting_title, item.meeting_date)}
+                      </Typography>
+                    )}
                     <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5, mb: 0.75 }}>
                       <Typography
                         variant="h5"

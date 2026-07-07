@@ -17,11 +17,11 @@ export const useReportGeneration = () => {
 
   // Update status when polling returns result
   if (reportStatus && status === 'generating') {
-    if (reportStatus.status === 'SUCCESS' && reportStatus.download_url) {
+    if (reportStatus.status === 'COMPLETED' && reportStatus.download_url) {
       setStatus('ready');
       setDownloadUrl(reportStatus.download_url);
       setTaskId(null);
-    } else if (reportStatus.status === 'FAILURE') {
+    } else if (reportStatus.status === 'FAILED') {
       setStatus('error');
       setTaskId(null);
     }
@@ -32,7 +32,7 @@ export const useReportGeneration = () => {
     setDownloadUrl(null);
     try {
       const result = await generateReport({ meetingId, reportType, params }).unwrap();
-      setTaskId(result.task_id);
+      setTaskId(result.id);
     } catch {
       setStatus('error');
     }

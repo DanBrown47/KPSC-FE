@@ -66,6 +66,7 @@ const PERMISSION_CHOICES = [
   { value: 'agenda_item_delete',  label: 'Delete Agenda Item' },
   { value: 'approve_agenda_item', label: 'Approve Agenda Item' },
   { value: 'final_agenda_view',   label: 'View Final Agenda' },
+  { value: 'audit_viewer',        label: 'View Audit Log' },
 ];
 
 

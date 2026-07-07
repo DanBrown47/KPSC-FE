@@ -7,12 +7,9 @@ import Divider from '@mui/material/Divider';
 import LockIcon from '@mui/icons-material/Lock';
 import { formatDistanceToNow } from 'date-fns';
 import { useGetReferenceNotesQuery, useCreateReferenceNoteMutation } from '../../store/api/agendaApi.js';
-import { useSelector } from 'react-redux';
-import { selectCurrentUser } from '../../store/authSlice.js';
 
 export const ReferenceNotesPanel = ({ agendaItemId, attachmentId }) => {
   const [newNote, setNewNote] = useState('');
-  const currentUser = useSelector(selectCurrentUser);
 
   const { data: allNotes } = useGetReferenceNotesQuery(
     { agendaItemId, attachmentId },
@@ -20,14 +17,12 @@ export const ReferenceNotesPanel = ({ agendaItemId, attachmentId }) => {
   );
   const [createNote, { isLoading }] = useCreateReferenceNoteMutation();
 
-  // Double-filter: API filters + client-side filter
-  const notes = (Array.isArray(allNotes?.results) ? allNotes.results : Array.isArray(allNotes) ? allNotes : [])
-    .filter((n) => n.created_by_id === currentUser?.id || n.created_by?.id === currentUser?.id);
+  const notes = Array.isArray(allNotes?.results) ? allNotes.results : Array.isArray(allNotes) ? allNotes : [];
 
   const handleSubmit = async () => {
     if (!newNote.trim()) return;
     try {
-      await createNote({ agendaItemId, attachmentId, note_text: newNote.trim() }).unwrap();
+      await createNote({ agendaItemId, attachmentId, content: newNote.trim() }).unwrap();
       setNewNote('');
     } catch {
       // silently fail
@@ -61,7 +56,7 @@ export const ReferenceNotesPanel = ({ agendaItemId, attachmentId }) => {
               }}
             >
               <Typography variant="body2" sx={{ whiteSpace: 'pre-wrap', lineHeight: 1.6 }}>
-                {note.note_text}
+                {note.content}
               </Typography>
               <Typography variant="caption" color="text.disabled" sx={{ mt: 0.5, display: 'block' }}>
                 {note.created_at
