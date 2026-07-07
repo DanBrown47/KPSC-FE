@@ -105,11 +105,10 @@ export const AuditLogPage = () => {
       headerName: 'User',
       width: 200,
       renderCell: ({ row }) => (
-        // <Box>
-        <Typography variant="body2" fontWeight={500}>{row.user_name || 'System'}</Typography>
-        //   {row.username && <Typography variant="caption" color="text.secondary">{row.username}</Typography>}
-        // </Box>
-        // <Typography variant="body2">{row.user_name || row.username || 'System'}</Typography>
+        <Box>
+          <Typography variant="body2" fontWeight={500}>{row.user_name || 'System'}</Typography>
+          {row.username && <Typography variant="caption" color="text.secondary">{row.username}</Typography>}
+        </Box>
 
       ),
     },
