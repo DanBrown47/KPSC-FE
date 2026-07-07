@@ -62,7 +62,7 @@ export const deriveMenuPermissions = (user) => {
     report_viewer: ['CHAIRMAN_PS', 'CONSOLIDATOR', 'CHAIRMAN', 'SECRETARY'].includes(role),
     user_manager: role === 'WEB_ADMIN',
     config_manager: role === 'WEB_ADMIN',
-    audit_viewer: ['CHAIRMAN', 'CHAIRMAN_PS'].includes(role) || allPerms.has('audit_viewer'),
+    audit_viewer: ['WEB_ADMIN', 'CHAIRMAN', 'CHAIRMAN_PS'].includes(role) || allPerms.has('audit_viewer'),
     wing_switcher: wingSwitcherRoles.has(role) && hasMultipleWings,
   };
 };
