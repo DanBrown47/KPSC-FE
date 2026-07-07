@@ -102,14 +102,19 @@ export const AuditLogPage = () => {
     },
     {
       field: 'user_id',
-      headerName: 'User',
+      headerName: 'User ID',
       width: 200,
       renderCell: ({ row }) => (
         <Box>
-          <Typography variant="body2" fontWeight={500}>{row.user_name || 'System'}</Typography>
-          {row.username && <Typography variant="caption" color="text.secondary">{row.username}</Typography>}
+          {row.is_system ? (
+            <Typography variant="body2" fontWeight={500} fontStyle="italic">System</Typography>
+          ) : (
+            <>
+              <Typography variant="body2" fontWeight={500}>{row.user_name}</Typography>
+              {row.username && <Typography variant="caption" color="text.secondary">{row.username}</Typography>}
+            </>
+          )}
         </Box>
-
       ),
     },
     {
