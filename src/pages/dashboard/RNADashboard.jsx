@@ -28,6 +28,7 @@ import Tab from '@mui/material/Tab';
 import { useDispatch } from 'react-redux';
 import { useGetAgendaItemsQuery, useBulkConsolidateMutation, useBulkReturnRNAMutation, useBulkConsolidateSupplementaryMutation } from '../../store/api/agendaApi.js';
 import { useGetMeetingsQuery, useToggleSupplementaryMutation } from '../../store/api/meetingsApi.js';
+import { useGetWingsQuery } from '../../store/api/wingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
 import { useAuth } from '../../hooks/useAuth.js';
@@ -104,6 +105,8 @@ export const RNADashboard = () => {
   const [bulkConsolidateSuppl, { isLoading: consolidatingSuppl }] = useBulkConsolidateSupplementaryMutation();
   const [toggleSupplementary, { isLoading: togglingSuppl }] = useToggleSupplementaryMutation();
 
+  const { data: wingsData, isLoading: wingsLoading } = useGetWingsQuery({ limit: 200 });
+
   const busy = consolidating || returning || consolidatingSuppl || togglingSuppl;
 
   // Pending items checkbox logic
@@ -175,14 +178,10 @@ export const RNADashboard = () => {
     }
   };
 
-  // Unique wings from all items in the selected meeting for supplementary toggle panel
-  const meetingWings = useMemo(() => {
-    const seen = new Map();
-    meetingItems.forEach((item) => {
-      if (item.wing && !seen.has(item.wing.id)) seen.set(item.wing.id, item.wing);
-    });
-    return Array.from(seen.values()).sort((a, b) => (a.priority_order || 0) - (b.priority_order || 0));
-  }, [meetingItems]);
+  const allWings = useMemo(() => {
+    const list = Array.isArray(wingsData?.results) ? wingsData.results : Array.isArray(wingsData) ? wingsData : [];
+    return list.slice().sort((a, b) => (a.priority_order || 0) - (b.priority_order || 0));
+  }, [wingsData]);
 
   const openWingIds = useMemo(
     () => new Set(selectedMeeting?.supplementary_open_wings || []),
@@ -412,10 +411,10 @@ export const RNADashboard = () => {
               <Alert severity="info" sx={{ mb: 2 }}>
                 Toggle supplementary submission windows per wing. Open wings can submit new items for this meeting after finalization.
               </Alert>
-              {itemsLoading ? (
+              {wingsLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
-              ) : meetingWings.length === 0 ? (
-                <Alert severity="warning">No wings have submitted items for this meeting yet.</Alert>
+              ) : allWings.length === 0 ? (
+                <Alert severity="warning">No wings found.</Alert>
               ) : (
                 <Table size="small">
                   <TableHead>
@@ -426,7 +425,7 @@ export const RNADashboard = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {meetingWings.map((wing) => {
+                    {allWings.map((wing) => {
                       const isOpen = openWingIds.has(wing.id);
                       return (
                         <TableRow key={wing.id}>
