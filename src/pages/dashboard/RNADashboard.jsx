@@ -310,7 +310,7 @@ export const RNADashboard = () => {
                             />
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2" fontWeight={500}>{item.wing?.name || '—'}</Typography>
+                            <Typography variant="body2" fontWeight={500}>{item.wing_name}</Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">{item.topic}</Typography>
@@ -389,7 +389,7 @@ export const RNADashboard = () => {
                             />
                           </TableCell>
                           <TableCell>
-                            <Typography variant="body2" fontWeight={500}>{item.wing?.name || '—'}</Typography>
+                            <Typography variant="body2" fontWeight={500}>{item.wing_name || '—'}</Typography>
                           </TableCell>
                           <TableCell>
                             <Typography variant="body2">{item.topic}</Typography>

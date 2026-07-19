@@ -132,7 +132,7 @@ const WingSwitcher = ({ currentUser }) => {
   );
 };
 
-export const TopBar = () => {
+export const TopBar = ({ sidebarWidth = 240 }) => {
   const location = useLocation();
   const { currentUser } = useAuth();
 
@@ -144,9 +144,10 @@ export const TopBar = () => {
     <AppBar
       position="fixed"
       sx={{
-        left: 240,
-        width: 'calc(100% - 240px)',
+        left: sidebarWidth,
+        width: `calc(100% - ${sidebarWidth}px)`,
         zIndex: 1100,
+        transition: 'left 0.2s ease, width 0.2s ease',
       }}
     >
       <Toolbar sx={{ minHeight: 64 }}>

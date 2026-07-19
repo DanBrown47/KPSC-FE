@@ -592,13 +592,11 @@ export const SittingPage = () => {
   });
 
   const allItems = Array.isArray(agendaData?.results) ? agendaData.results : Array.isArray(agendaData) ? agendaData : [];
-  const regularItems = allItems.filter((i) => !i.is_supplementary);
-  const supplementaryItems = allItems.filter((i) => i.is_supplementary);
 
-  // Group regular items by wing, ordered by wing.priority_order
+  // Group all items (regular + supplementary) by wing, ordered by wing.priority_order
   const wingGroups = useMemo(() => {
     const map = new Map();
-    for (const item of regularItems) {
+    for (const item of allItems) {
       const wingId = item.wing || 0;
       const wingName = item.wing_name || 'Unknown Wing';
       const wingPriority = item.wing_priority_order ?? Infinity;
@@ -610,23 +608,7 @@ export const SittingPage = () => {
     const groups = Array.from(map.values());
     groups.sort((a, b) => a.wingPriority - b.wingPriority);
     return groups;
-  }, [regularItems]);
-
-  const supplementaryWingGroups = useMemo(() => {
-    const map = new Map();
-    for (const item of supplementaryItems) {
-      const wingId = item.wing || 0;
-      const wingName = item.wing_name || 'Unknown Wing';
-      const wingPriority = item.wing_priority_order ?? Infinity;
-      if (!map.has(wingId)) {
-        map.set(wingId, { wingId, wingName, wingPriority, items: [] });
-      }
-      map.get(wingId).items.push(item);
-    }
-    const groups = Array.from(map.values());
-    groups.sort((a, b) => a.wingPriority - b.wingPriority);
-    return groups;
-  }, [supplementaryItems]);
+  }, [allItems]);
 
   const { data: selectedItem } = useGetAgendaItemQuery(selectedItemId, { skip: !selectedItemId });
 
@@ -637,7 +619,7 @@ export const SittingPage = () => {
 
   if (meetingLoading) return <Box sx={{ display: 'flex', justifyContent: 'center', mt: 8 }}><CircularProgress /></Box>;
 
-  const renderItemRow = (item, isSupplementary) => {
+  const renderItemRow = (item, isSupplementary = item.is_supplementary) => {
     const isDiscussed = DISCUSSED_STATUSES.has(item.status);
     const isCurrent = item.id === selectedItemId;
     const borderColor = isDiscussed ? '#34D399' : isCurrent ? ADMIN_BLUE : 'transparent';
@@ -680,13 +662,13 @@ export const SittingPage = () => {
     );
   };
 
-  const renderWingGroups = (groups, isSupplementary) =>
+  const renderWingGroups = (groups) =>
     groups.map((group) => (
       <Box key={group.wingId}>
         <Typography variant="caption" sx={{ fontWeight: 700, color: '#64748B', textTransform: 'uppercase', letterSpacing: '0.05em', display: 'block', px: 0.5, pt: 1, pb: 0.25, fontSize: '0.6875rem', borderBottom: '1px solid rgba(148,163,184,0.2)', mb: 0.5 }}>
           {group.wingName}
         </Typography>
-        {group.items.map((item) => renderItemRow(item, isSupplementary))}
+        {group.items.map((item) => renderItemRow(item))}
       </Box>
     ));
 
@@ -713,21 +695,7 @@ export const SittingPage = () => {
           <Box sx={{ flex: 1, overflowY: 'auto', p: 1 }}>
             {agendaLoading ? (
               <Box sx={{ display: 'flex', justifyContent: 'center', mt: 4 }}><CircularProgress size={24} sx={{ color: '#94A3B8' }} /></Box>
-            ) : (
-              <>
-                {renderWingGroups(wingGroups, false)}
-                {supplementaryItems.length > 0 && (
-                  <>
-                    <Divider sx={{ my: 1.5, borderColor: 'rgba(167,139,250,0.3)' }}>
-                      <Typography variant="caption" sx={{ color: '#A78BFA', fontWeight: 600, fontSize: '0.6875rem' }}>
-                        SUPPLEMENTARY AGENDA
-                      </Typography>
-                    </Divider>
-                    {renderWingGroups(supplementaryWingGroups, true)}
-                  </>
-                )}
-              </>
-            )}
+            ) : renderWingGroups(wingGroups)}
           </Box>
         </Box>
 

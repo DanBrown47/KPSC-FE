@@ -9,18 +9,17 @@ import ZoomInIcon from '@mui/icons-material/ZoomIn';
 import ZoomOutIcon from '@mui/icons-material/ZoomOut';
 import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
 import NavigateNextIcon from '@mui/icons-material/NavigateNext';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
+import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ReferenceNotesPanel } from './ReferenceNotesPanel.jsx';
 import { useGetAttachmentStreamQuery } from '../../store/api/agendaApi.js';
 import { usePermissions } from '../../hooks/usePermissions.js';
 
-// Set up PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
 
 export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
   const { canUsePrivateNotes } = usePermissions();
@@ -28,8 +27,12 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.0);
   const [objectUrl, setObjectUrl] = useState(null);
+  const [fullscreen, setFullscreen] = useState(false);
 
-  const { data: blob, isLoading } = useGetAttachmentStreamQuery(
+  const mimeType = attachment?.mime_type || '';
+  const isImage = mimeType.startsWith('image/');
+
+  const { data: blob, isLoading: blobLoading } = useGetAttachmentStreamQuery(
     { agendaItemId, attachmentId: attachment?.id },
     { skip: !open || !attachment?.id || !agendaItemId }
   );
@@ -48,14 +51,17 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
     if (open) {
       setCurrentPage(1);
       setScale(1.0);
+      setFullscreen(false);
     }
   }, [open, attachment?.id]);
 
   if (!open) return null;
 
-  const mimeType = attachment?.mime_type || '';
-  const isImage = mimeType.startsWith('image/');
-  const fileUrl = objectUrl;
+  const isLoading = blobLoading;
+
+  const pdfFile = !isImage && objectUrl ? objectUrl : null;
+
+  const fileUrl = isImage ? objectUrl : null;
 
   const handleZoomIn = () => setScale((s) => Math.min(s + 0.25, 3.0));
   const handleZoomOut = () => setScale((s) => Math.max(s - 0.25, 0.5));
@@ -66,15 +72,16 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
     <Box
       sx={{
         position: 'fixed',
-        top: 64, // below TopBar
+        top: fullscreen ? 0 : 64,
+        left: fullscreen ? 0 : 'auto',
         right: 0,
         bottom: 0,
-        width: 520,
+        width: fullscreen ? '100%' : 520,
         bgcolor: 'background.paper',
         boxShadow: '-4px 0 24px rgba(0,0,0,0.15)',
         display: 'flex',
         flexDirection: 'column',
-        zIndex: 1300,
+        zIndex: fullscreen ? 1400 : 1300,
       }}
     >
       {/* Custom toolbar */}
@@ -127,6 +134,11 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
             <ZoomInIcon fontSize="small" />
           </IconButton>
         </Tooltip>
+        <Tooltip title={fullscreen ? 'Exit full screen' : 'Full screen'}>
+          <IconButton size="small" onClick={() => setFullscreen((f) => !f)}>
+            {fullscreen ? <FullscreenExitIcon fontSize="small" /> : <FullscreenIcon fontSize="small" />}
+          </IconButton>
+        </Tooltip>
         <IconButton size="small" onClick={onClose}>
           <CloseIcon fontSize="small" />
         </IconButton>
@@ -148,10 +160,10 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
             />
           </Box>
         )}
-        {!isLoading && fileUrl && !isImage && (
+        {!isLoading && pdfFile && !isImage && (
           <Box sx={{ display: 'flex', justifyContent: 'center' }}>
             <Document
-              file={fileUrl}
+              file={pdfFile}
               onLoadSuccess={({ numPages }) => setNumPages(numPages)}
               loading={
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
@@ -173,7 +185,7 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
             </Document>
           </Box>
         )}
-        {!isLoading && !fileUrl && (
+        {!isLoading && !fileUrl && !pdfFile && (
           <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: 300 }}>
             <Typography variant="body2" sx={{ color: 'rgba(255,255,255,0.7)' }}>
               No preview available

@@ -1,4 +1,4 @@
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { createBrowserRouter, Navigate } from 'react-router-dom';
 import { AppShell } from './components/layout/AppShell.jsx';
 import { ProtectedRoute } from './components/layout/ProtectedRoute.jsx';
 
@@ -35,88 +35,78 @@ import { WingMarketplacePage } from './pages/wings/WingMarketplacePage.jsx';
 // Reports
 import { ReportsPage } from './pages/reports/ReportsPage.jsx';
 
-function App() {
-  return (
-    <Routes>
-      {/* Public route */}
-      <Route path="/login" element={<LoginPage />} />
+export const router = createBrowserRouter([
+  { path: '/login', element: <LoginPage /> },
+  {
+    path: '/',
+    element: (
+      <ProtectedRoute>
+        <AppShell />
+      </ProtectedRoute>
+    ),
+    children: [
+      { index: true, element: <Navigate to="/dashboard" replace /> },
+      { path: 'dashboard', element: <DashboardRouter /> },
 
-      {/* Protected routes - all wrapped in AppShell */}
-      <Route
-        path="/"
-        element={
-          <ProtectedRoute>
-            <AppShell />
+      // Meetings
+      { path: 'meetings', element: <MeetingListPage /> },
+      { path: 'meetings/:id', element: <MeetingDetailPage /> },
+      { path: 'calendar', element: <CalendarPage /> },
+
+      // Agenda
+      { path: 'agenda', element: <AgendaManagementPage /> },
+      { path: 'agenda/create', element: <CreateAgendaPage /> },
+      { path: 'agenda/:id', element: <AgendaDetailPage /> },
+      { path: 'agenda/:id/edit', element: <CreateAgendaPage /> },
+      { path: 'approvals', element: <AgendaApprovalPage /> },
+      { path: 'consolidation', element: <ConsolidationPage /> },
+
+      // Sitting
+      { path: 'sitting/:meetingId', element: <SittingPage /> },
+
+      // Wing Marketplace
+      { path: 'my-wings', element: <WingMarketplacePage /> },
+
+      // Admin
+      {
+        path: 'webadmin/users',
+        element: (
+          <ProtectedRoute requiredPermission="user_manager">
+            <UserManagementPage />
           </ProtectedRoute>
-        }
-      >
-        <Route index element={<Navigate to="/dashboard" replace />} />
-        <Route path="dashboard" element={<DashboardRouter />} />
+        ),
+      },
+      {
+        path: 'webadmin/wings',
+        element: (
+          <ProtectedRoute requiredPermission="config_manager">
+            <WingConfigPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'webadmin/audit',
+        element: (
+          <ProtectedRoute requiredPermission="audit_viewer">
+            <AuditLogPage />
+          </ProtectedRoute>
+        ),
+      },
+      {
+        path: 'webadmin/agenda-forms',
+        element: (
+          <ProtectedRoute requiredPermission="config_manager">
+            <AgendaFormsPage />
+          </ProtectedRoute>
+        ),
+      },
 
-        {/* Meetings */}
-        <Route path="meetings" element={<MeetingListPage />} />
-        <Route path="meetings/:id" element={<MeetingDetailPage />} />
-        <Route path="calendar" element={<CalendarPage />} />
+      // Reports
+      { path: 'reports', element: <ReportsPage /> },
 
-        {/* Agenda */}
-        <Route path="agenda" element={<AgendaManagementPage />} />
-        <Route path="agenda/create" element={<CreateAgendaPage />} />
-        <Route path="agenda/:id" element={<AgendaDetailPage />} />
-        <Route path="agenda/:id/edit" element={<CreateAgendaPage />} />
-        <Route path="approvals" element={<AgendaApprovalPage />} />
-        <Route path="consolidation" element={<ConsolidationPage />} />
-
-        {/* Sitting */}
-        <Route path="sitting/:meetingId" element={<SittingPage />} />
-
-        {/* Wing Marketplace */}
-        <Route path="my-wings" element={<WingMarketplacePage />} />
-
-        {/* Admin — /webadmin/* avoids conflict with Django's /admin/ path */}
-        <Route
-          path="webadmin/users"
-          element={
-            <ProtectedRoute requiredPermission="user_manager">
-              <UserManagementPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="webadmin/wings"
-          element={
-            <ProtectedRoute requiredPermission="config_manager">
-              <WingConfigPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="webadmin/audit"
-          element={
-            <ProtectedRoute requiredPermission="audit_viewer">
-              <AuditLogPage />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="webadmin/agenda-forms"
-          element={
-            <ProtectedRoute requiredPermission="config_manager">
-              <AgendaFormsPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Reports */}
-        <Route path="reports" element={<ReportsPage />} />
-
-        {/* Catch-all */}
-        <Route path="*" element={<Navigate to="/dashboard" replace />} />
-      </Route>
-
-      {/* Root redirect */}
-      <Route path="*" element={<Navigate to="/dashboard" replace />} />
-    </Routes>
-  );
-}
-
-export default App;
+      // Catch-all
+      { path: '*', element: <Navigate to="/dashboard" replace /> },
+    ],
+  },
+  { path: '*', element: <Navigate to="/dashboard" replace /> },
+]);

@@ -33,7 +33,7 @@ export const AppShell = () => {
           transition: 'margin-left 0.2s ease',
         }}
       >
-        <TopBar />
+        <TopBar sidebarWidth={sidebarWidth} />
         <Box
           component="main"
           sx={{
