@@ -346,10 +346,20 @@ export const CreateAgendaPage = () => {
                         [{m.status}]
                       </Typography>
                     )}
+                    {m.is_consolidated && !['FINALIZED', 'COMPLETED'].includes(m.status) && (
+                      <Typography component="span" variant="caption" sx={{ ml: 1, color: 'primary.main' }}>
+                        [CONSOLIDATED]
+                      </Typography>
+                    )}
                   </MenuItem>
                 ))}
               </TextField>
 
+              {selectedMeeting?.is_consolidated && selectedMeetingStatus !== 'FINALIZED' && (
+                <Alert severity="info">
+                  This meeting has been consolidated by R&A. Items added here will automatically be created as <strong>supplementary</strong>.
+                </Alert>
+              )}
               {selectedMeetingStatus === 'FINALIZED' && (
                 <Alert severity="info">
                   This meeting is finalized. Items added here will automatically be created as <strong>supplementary</strong>.

@@ -27,7 +27,7 @@ import Tabs from '@mui/material/Tabs';
 import Tab from '@mui/material/Tab';
 import { useDispatch } from 'react-redux';
 import { useGetAgendaItemsQuery, useBulkConsolidateMutation, useBulkReturnRNAMutation, useBulkConsolidateSupplementaryMutation } from '../../store/api/agendaApi.js';
-import { useGetMeetingsQuery, useToggleSupplementaryMutation } from '../../store/api/meetingsApi.js';
+import { useGetMeetingsQuery, useToggleSupplementaryMutation, useMarkConsolidatedMutation } from '../../store/api/meetingsApi.js';
 import { useGetWingsQuery } from '../../store/api/wingsApi.js';
 import { PageHeader } from '../../components/common/PageHeader.jsx';
 import { StatusChip } from '../../components/common/StatusChip.jsx';
@@ -104,10 +104,11 @@ export const RNADashboard = () => {
   const [bulkReturn, { isLoading: returning }] = useBulkReturnRNAMutation();
   const [bulkConsolidateSuppl, { isLoading: consolidatingSuppl }] = useBulkConsolidateSupplementaryMutation();
   const [toggleSupplementary, { isLoading: togglingSuppl }] = useToggleSupplementaryMutation();
+  const [markConsolidated, { isLoading: markingConsolidated }] = useMarkConsolidatedMutation();
 
   const { data: wingsData, isLoading: wingsLoading } = useGetWingsQuery({ limit: 200 });
 
-  const busy = consolidating || returning || consolidatingSuppl || togglingSuppl;
+  const busy = consolidating || returning || consolidatingSuppl || togglingSuppl || markingConsolidated;
 
   // Pending items checkbox logic
   const allPendingChecked = pendingItems.length > 0 && selectedIds.length === pendingItems.length;
@@ -163,6 +164,15 @@ export const RNADashboard = () => {
       setSelectedSupplIds([]);
     } catch (err) {
       dispatch(showToast({ message: err?.data?.detail || 'Supplementary consolidation failed', severity: 'error' }));
+    }
+  };
+
+  const handleMarkConsolidated = async () => {
+    try {
+      await markConsolidated(selectedMeetingId).unwrap();
+      dispatch(showToast({ message: 'Meeting marked as consolidated. New wing items will be supplementary.', severity: 'success' }));
+    } catch (err) {
+      dispatch(showToast({ message: err?.data?.detail || 'Failed to mark consolidated', severity: 'error' }));
     }
   };
 
@@ -230,7 +240,9 @@ export const RNADashboard = () => {
               <MenuItem value=""><em>— Choose a meeting —</em></MenuItem>
               {meetings.map((m) => (
                 <MenuItem key={m.id} value={String(m.id)}>
-                  {m.title} <Chip label={m.status} size="small" sx={{ ml: 1 }} />
+                  {m.title}
+                  <Chip label={m.status} size="small" sx={{ ml: 1 }} />
+                  {m.is_consolidated && <Chip label="CONSOLIDATED" size="small" color="primary" sx={{ ml: 0.5 }} />}
                 </MenuItem>
               ))}
             </Select>
@@ -249,6 +261,22 @@ export const RNADashboard = () => {
           {/* Tab 0 — PENDING_RNA items */}
           {activeTab === 0 && (
             <CardContent>
+              <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+                {selectedMeeting?.is_consolidated ? (
+                  <Chip label="Meeting Consolidated — new wing items will be supplementary" color="primary" size="small" />
+                ) : (
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    color="primary"
+                    onClick={handleMarkConsolidated}
+                    disabled={busy}
+                    startIcon={markingConsolidated ? <CircularProgress size={14} color="inherit" /> : null}
+                  >
+                    Lock Meeting (Mark Consolidated)
+                  </Button>
+                )}
+              </Box>
               {itemsLoading ? (
                 <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}><CircularProgress /></Box>
               ) : pendingItems.length === 0 ? (

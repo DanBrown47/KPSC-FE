@@ -19,13 +19,38 @@ export const ChairmanDashboard = () => {
   const upcomingMeetings = meetings.filter((m) => new Date(m.sitting_date) >= now);
   const nextMeeting = upcomingMeetings[0];
 
+  // Find any meeting with an active live sitting so the Chairman can always rejoin
+  const activeSitting = meetings.find((m) => m.sitting_enabled);
+
   return (
     <Box>
       <PageHeader
         title={`Welcome, ${currentUser?.user?.first_name || currentUser?.full_name?.split(' ')[0] || 'Chairman'}`}
         subtitle="Chairman, Kerala Public Service Commission"
       />
-      {nextMeeting && (
+      {isLoading ? (
+        <Skeleton variant="rounded" height={120} sx={{ mb: 3 }} />
+      ) : activeSitting ? (
+        <Card sx={{ mb: 3, bgcolor: '#059669', border: '1px solid #047857', color: '#fff' }}>
+          <CardContent>
+            <Typography variant="caption" sx={{ color: '#D1FAE5', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 1 }}>
+              Sitting is LIVE
+            </Typography>
+            <Typography variant="h2" sx={{ color: '#fff', mt: 0.5 }}>{activeSitting.title}</Typography>
+            <Typography variant="body2" sx={{ color: '#D1FAE5', mt: 0.5 }}>
+              {activeSitting.sitting_date ? new Date(activeSitting.sitting_date).toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : '—'}
+            </Typography>
+            <Button
+              variant="contained"
+              size="small"
+              onClick={() => navigate(`/sitting/${activeSitting.id}`)}
+              sx={{ mt: 1.5, bgcolor: '#fff', color: '#059669', '&:hover': { bgcolor: '#D1FAE5' } }}
+            >
+              Rejoin Sitting
+            </Button>
+          </CardContent>
+        </Card>
+      ) : nextMeeting ? (
         nextMeeting.sitting_enabled ? (
           <Card sx={{ mb: 3, bgcolor: '#059669', border: '1px solid #047857', color: '#fff' }}>
             <CardContent>
@@ -62,7 +87,7 @@ export const ChairmanDashboard = () => {
             </CardContent>
           </Card>
         )
-      )}
+      ) : null}
       <Grid container spacing={3}>
         <Grid size={{ xs: 12, sm: 6, md: 4 }}>
           <Card>
