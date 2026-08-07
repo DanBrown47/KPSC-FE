@@ -69,6 +69,6 @@ export const usePermissions = () => {
     isChairman: isRole('CHAIRMAN'),
     isMember: isRole('MEMBER'),
     isWebAdmin: isRole('WEB_ADMIN'),
-    canUsePrivateNotes,
+    canUsePrivateNotes: canUsePrivateNotes(),
   };
 };
