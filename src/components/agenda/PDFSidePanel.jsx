@@ -14,15 +14,19 @@ import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import { Document, Page, pdfjs } from 'react-pdf';
 import 'react-pdf/dist/Page/TextLayer.css';
 import 'react-pdf/dist/Page/AnnotationLayer.css';
-import pdfWorkerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { ReferenceNotesPanel } from './ReferenceNotesPanel.jsx';
 import { useGetAttachmentStreamQuery } from '../../store/api/agendaApi.js';
 import { usePermissions } from '../../hooks/usePermissions.js';
+import { useSelector } from 'react-redux';
+import { selectToken } from '../../store/authSlice.js';
 
-pdfjs.GlobalWorkerOptions.workerSrc = pdfWorkerUrl;
+const API_BASE = import.meta.env.VITE_API_URL || '';
+
+pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
   const { canUsePrivateNotes } = usePermissions();
+  const token = useSelector(selectToken);
   const [numPages, setNumPages] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [scale, setScale] = useState(1.0);
@@ -32,9 +36,10 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
   const mimeType = attachment?.mime_type || '';
   const isImage = mimeType.startsWith('image/');
 
+  // Only fetch blob for images; PDFs load directly via URL + auth header in react-pdf
   const { data: blob, isLoading: blobLoading } = useGetAttachmentStreamQuery(
     { agendaItemId, attachmentId: attachment?.id },
-    { skip: !open || !attachment?.id || !agendaItemId }
+    { skip: !open || !attachment?.id || !agendaItemId || !isImage }
   );
 
   useEffect(() => {
@@ -57,9 +62,16 @@ export const PDFSidePanel = ({ open, attachment, agendaItemId, onClose }) => {
 
   if (!open) return null;
 
-  const isLoading = blobLoading;
+  const isLoading = isImage && blobLoading;
 
-  const pdfFile = !isImage && objectUrl ? objectUrl : null;
+  // Pass URL + auth header directly so pdf.js worker can fetch it without blob URL limitations
+  const pdfFile =
+    !isImage && attachment?.id && agendaItemId && token
+      ? {
+          url: `${API_BASE}/api/v1/agenda/${agendaItemId}/attachments/${attachment.id}/stream/`,
+          httpHeaders: { Authorization: `Bearer ${token}` },
+        }
+      : null;
 
   const fileUrl = isImage ? objectUrl : null;
 
